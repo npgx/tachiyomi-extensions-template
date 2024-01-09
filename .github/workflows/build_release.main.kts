@@ -21,13 +21,12 @@ import io.github.typesafegithub.workflows.yaml.writeToFile
 val signingkey = "signingkey.jks"
 
 workflow(
-    name = "CI",
+    name = "Compile Release",
     on = listOf(WorkflowDispatch(), Push(branches = listOf("master"), tags = listOf("build_release"), pathsIgnore = listOf("**.md"))),
     sourceFile = __FILE__.toPath(),
-    concurrency = Concurrency(group = "\${{ github.workflow }}", cancelInProgress = true),
+    concurrency = Concurrency(group = expr { github.workflow }, cancelInProgress = true),
     permissions = mapOf(Permission.Contents to Mode.Write),
     env = linkedMapOf(),
-    yamlConsistencyJobCondition = "false",
 ) {
 
     job(
