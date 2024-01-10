@@ -39,7 +39,7 @@ workflow(
         uses(name = "Set up JDK", action = SetupJavaV4(javaVersion = "21", distribution = SetupJavaV4.Distribution.Adopt))
         uses(name = "Setup Gradle", action = GradleBuildActionV2())
 
-        run(name = "Prepare signing key", command = "echo ${expr { secrets["SIGNING_KEY"]!! }} | base64 -d > ${expr { secrets["KEY_FILE_NAME"]!! }}")
+        run(name = "Prepare signing key", command = "echo ${expr { secrets["KEY_STORE"]!! }} | base64 -d > ${expr { secrets["KEY_FILE_NAME"]!! }}")
         run(
             name = "Compile for release",
             command = "./gradlew :assembleExtensionsForRelease",
