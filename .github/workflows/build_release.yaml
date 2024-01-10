@@ -66,3 +66,4 @@ jobs:
     - id: 'step-6'
       name: 'Clean up CI files'
       run: 'rm ${{ secrets.KEY_FILE_NAME }}'
+      if: '${{ always() }}'

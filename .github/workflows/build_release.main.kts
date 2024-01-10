@@ -51,7 +51,7 @@ workflow(
             )
         )
 
-        run(name = "Clean up CI files", command = "rm ${expr { secrets["KEY_FILE_NAME"]!! }}")
+        run(name = "Clean up CI files", `if` = expr { always() }, command = "rm ${expr { secrets["KEY_FILE_NAME"]!! }}")
     }
 
 }.writeToFile()
