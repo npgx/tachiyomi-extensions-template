@@ -58,8 +58,9 @@ jobs:
     - id: 'step-5'
       name: 'Compile for release'
       env:
-        KEY_STORE_ALIAS: '${{ secrets.KEY_STORE_ALIAS }}'
+        KEY_FILE_NAME: '${{ secrets.KEY_FILE_NAME }}'
         KEY_STORE_PASSWORD: '${{ secrets.KEY_STORE_PASSWORD }}'
+        KEY_STORE_ALIAS: '${{ secrets.KEY_STORE_ALIAS }}'
         KEY_PASSWORD: '${{ secrets.KEY_PASSWORD }}'
       run: './gradlew :assembleExtensionsForRelease'
     - id: 'step-6'

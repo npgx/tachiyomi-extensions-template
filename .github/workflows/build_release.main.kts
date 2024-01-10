@@ -44,8 +44,9 @@ workflow(
             name = "Compile for release",
             command = "./gradlew :assembleExtensionsForRelease",
             env = linkedMapOf(
-                "KEY_STORE_ALIAS" to expr { secrets["KEY_STORE_ALIAS"]!! },
+                "KEY_FILE_NAME" to expr { secrets["KEY_FILE_NAME"]!! },
                 "KEY_STORE_PASSWORD" to expr { secrets["KEY_STORE_PASSWORD"]!! },
+                "KEY_STORE_ALIAS" to expr { secrets["KEY_STORE_ALIAS"]!! },
                 "KEY_PASSWORD" to expr { secrets["KEY_PASSWORD"]!! },
             )
         )
