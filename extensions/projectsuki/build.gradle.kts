@@ -7,14 +7,11 @@ plugins {
 buildscript {
     dependencies {
         @Suppress("GradleDynamicVersion")
-        classpath("local.buildsrc:extension-conventions:+")
+        classpath("local.buildsrc:conventions:+")
     }
 }
 
 setupTachiyomiExtensionConfiguration(
-    compileBundle = libs.bundles.extension.compile,
-    compileSdk = libs.versions.sdk.compile.get().toInt(),
-    minSdk = libs.versions.sdk.min.get().toInt(),
     namespaceIdentifier = "npgx",
     extName = "Project Suki",
     pkgNameSuffix = "projectsuki",

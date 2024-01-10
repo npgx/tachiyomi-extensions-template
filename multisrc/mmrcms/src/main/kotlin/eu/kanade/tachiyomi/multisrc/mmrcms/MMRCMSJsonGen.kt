@@ -14,6 +14,7 @@ import java.io.PrintWriter
 import java.security.cert.CertificateException
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
@@ -213,7 +214,75 @@ class MMRCMSJsonGen {
     )
 
     companion object {
-        val sources = MMRCMSGenerator().sources
+        sealed class ThemeSourceData {
+            abstract val name: String
+            abstract val baseUrl: String
+            abstract val isNsfw: Boolean
+            abstract val className: String
+            abstract val pkgName: String
+
+            /**
+             * Override it if for some reason the name attribute inside the source class
+             * should be different from the extension name. Useful in cases where the
+             * extension name should be romanized and the source name should be the one
+             * in the source language. Defaults to the extension name if not specified.
+             */
+            abstract val sourceName: String
+
+            /**
+             * overrideVersionCode defaults to 0, if a source changes their source override code or
+             * a previous existing source suddenly needs source code overrides, overrideVersionCode
+             * should be increased.
+             * When a new source is added with overrides, overrideVersionCode should still be set to 0
+             *
+             * Note: source code overrides are located in "multisrc/overrides/src/<themeName>/<sourceName>"
+             */
+            abstract val overrideVersionCode: Int
+        }
+
+        data class SingleLang(
+            override val name: String,
+            override val baseUrl: String,
+            val lang: String,
+            override val isNsfw: Boolean = false,
+            override val className: String = name.replace(" ", ""),
+            override val pkgName: String = className.lowercase(Locale.ENGLISH),
+            override val sourceName: String = name,
+            override val overrideVersionCode: Int = 0,
+        ) : ThemeSourceData()
+
+        data class MultiLang(
+            override val name: String,
+            override val baseUrl: String,
+            val langs: List<String>,
+            override val isNsfw: Boolean = false,
+            override val className: String = name.replace(" ", "") + "Factory",
+            override val pkgName: String = className.substringBefore("Factory").lowercase(Locale.ENGLISH),
+            override val sourceName: String = name,
+            override val overrideVersionCode: Int = 0,
+        ) : ThemeSourceData()
+
+        val sources = listOf(
+            SingleLang("مانجا اون لاين", "https://onma.top", "ar", className = "onma"),
+            SingleLang("Read Comics Online", "https://readcomicsonline.ru", "en"),
+            SingleLang("Fallen Angels", "https://manga.fascans.com", "en", overrideVersionCode = 2),
+            SingleLang("Scan FR", "https://www.scan-fr.org", "fr", overrideVersionCode = 2),
+            SingleLang("Scan VF", "https://www.scan-vf.net", "fr", overrideVersionCode = 1),
+            SingleLang("Komikid", "https://www.komikid.com", "id"),
+            SingleLang("Mangadoor", "https://mangadoor.com", "es", overrideVersionCode = 1),
+            SingleLang("Utsukushii", "https://manga.utsukushii-bg.com", "bg", overrideVersionCode = 1),
+            SingleLang("Phoenix-Scans", "https://phoenix-scans.pl", "pl", className = "PhoenixScans", overrideVersionCode = 1),
+            SingleLang("Lelscan-VF", "https://lelscanvf.cc", "fr", className = "LelscanVF", overrideVersionCode = 2),
+            SingleLang("AnimaRegia", "https://animaregia.net", "pt-BR", overrideVersionCode = 4),
+            SingleLang("MangaID", "https://mangaid.click", "id", overrideVersionCode = 1),
+            SingleLang("Jpmangas", "https://jpmangas.xyz", "fr", overrideVersionCode = 2),
+            SingleLang("Manga-FR", "https://manga-fr.cc", "fr", className = "MangaFR", overrideVersionCode = 2),
+            SingleLang("Manga-Scan", "https://mangascan.cc", "fr", className = "MangaScan", overrideVersionCode = 2),
+            SingleLang("Ama Scans", "https://amascan.com", "pt-BR", isNsfw = true, overrideVersionCode = 2),
+            SingleLang("Bentoscan", "https://bentoscan.com", "fr"),
+            // NOTE: THIS SOURCE CONTAINS A CUSTOM LANGUAGE SYSTEM (which will be ignored)!
+            SingleLang("HentaiShark", "https://www.hentaishark.com", "all", isNsfw = true),
+        )
 
         val relativePath = System.getProperty("user.dir")!! + "/multisrc/src/main/java/eu/kanade/tachiyomi/multisrc/mmrcms/SourceData.kt"
 

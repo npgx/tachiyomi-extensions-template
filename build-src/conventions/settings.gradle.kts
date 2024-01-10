@@ -26,5 +26,5 @@ plugins {
 }
 
 rootProject.apply {
-    name = "extension-conventions"
+    name = "conventions"
 }

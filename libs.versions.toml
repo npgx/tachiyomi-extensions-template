@@ -1,14 +1,15 @@
 [versions]
-kotlin_gradleCompatible = "1.9.20"
 kotlin_target = "1.9.22"
 kotlin_api = "1.8"
 kotlin_language = "1.9"
+
+kotlin_gradleCompatible = "1.9.20"
 kotlin_coroutines = "1.6.4"
 kotlin_serialization = "1.4.0"
 
 android_gradlePlugin = "8.2.1"
 
-tachiyomi_lib = "1.4.2"
+tachiyomi_lib = "1.4.4"
 
 sdk_min = "21"
 sdk_compile = "34"

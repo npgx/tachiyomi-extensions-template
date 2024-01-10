@@ -18,8 +18,6 @@ import io.github.typesafegithub.workflows.dsl.expressions.expr
 import io.github.typesafegithub.workflows.dsl.workflow
 import io.github.typesafegithub.workflows.yaml.writeToFile
 
-val signingkey = "signingkey.jks"
-
 workflow(
     name = "Compile Release",
     on = listOf(WorkflowDispatch(), Push(branches = listOf("master"), tags = listOf("build_release"), pathsIgnore = listOf("**.md"))),
@@ -41,18 +39,18 @@ workflow(
         uses(name = "Set up JDK", action = SetupJavaV4(javaVersion = "21", distribution = SetupJavaV4.Distribution.Adopt))
         uses(name = "Setup Gradle", action = GradleBuildActionV2())
 
-        run(name = "Prepare signing key", command = "echo ${expr { secrets["SIGNING_KEY"]!! }} | base64 -d > $signingkey")
+        run(name = "Prepare signing key", command = "echo ${expr { secrets["SIGNING_KEY"]!! }} | base64 -d > ${expr { secrets["KEY_FILE_NAME"]!! }}")
         run(
             name = "Compile for release",
-            command = "./gradlew :compileExtensionsForRelease",
+            command = "./gradlew :assembleExtensionsForRelease",
             env = linkedMapOf(
-                "ALIAS" to expr { secrets["ALIAS"]!! },
+                "KEY_STORE_ALIAS" to expr { secrets["KEY_STORE_ALIAS"]!! },
                 "KEY_STORE_PASSWORD" to expr { secrets["KEY_STORE_PASSWORD"]!! },
                 "KEY_PASSWORD" to expr { secrets["KEY_PASSWORD"]!! },
             )
         )
 
-        run(name = "Clean up CI files", command = "rm $signingkey")
+        run(name = "Clean up CI files", command = "rm ${expr { secrets["KEY_FILE_NAME"]!! }}")
     }
 
 }.writeToFile()

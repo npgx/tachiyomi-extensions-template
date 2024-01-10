@@ -2,13 +2,14 @@ import com.android.build.api.dsl.ApkSigningConfig
 import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
-import org.gradle.api.artifacts.ExternalModuleDependencyBundle
+import org.gradle.api.artifacts.VersionCatalog
+import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.file.RegularFile
-import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.getByName
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import kotlin.jvm.optionals.getOrDefault
 
 sealed class LibVersion(val versionName: String) {
     data object V4 : LibVersion("1.4")
@@ -26,7 +27,7 @@ sealed class TachiyomiLibrary(val identifier: String) {
 }
 
 sealed class MultiSrc(val identifier: String) {
-    data object A3manga : MultiSrc("a3manga")
+    data object A3Manga : MultiSrc("a3manga")
     data object Bakamanga : MultiSrc("bakamanga")
     data object Bakkin : MultiSrc("bakkin")
     data object Bilibili : MultiSrc("bilibili")
@@ -48,7 +49,7 @@ sealed class MultiSrc(val identifier: String) {
     data object MadTheme : MultiSrc("madtheme")
     data object MangaBox : MultiSrc("mangabox")
     data object MangaCatalog : MultiSrc("mangacatalog")
-    data object Mangdventure : MultiSrc("mangadventure")
+    data object Mangadventure : MultiSrc("mangadventure")
     data object MangaHub : MultiSrc("mangahub")
     data object MangaMainac : MultiSrc("mangamainac")
     data object MangaRaw : MultiSrc("mangaraw")
@@ -77,10 +78,10 @@ sealed class MultiSrc(val identifier: String) {
 
 fun Project.setupTachiyomiExtensionConfiguration(
     @Suppress("UNUSED_PARAMETER") vararg useParameterNames: Unit = emptyArray(),
-    compileBundle: Provider<ExternalModuleDependencyBundle>,
+    catalog: VersionCatalog = extensions.getByName<VersionCatalogsExtension>("versionCatalogs").named("libs"),
+    compileSdk: Int = catalog.findVersion("sdk_compile").map { it.toString().toIntOrNull() }.getOrDefault(null) ?: error("Not found: libs.versions.sdk.compile"),
+    minSdk: Int = catalog.findVersion("sdk_min").map { it.toString().toIntOrNull() }.getOrDefault(null) ?: error("Not found: libs.versions.sdk.min"),
     namespaceIdentifier: String,
-    compileSdk: Int = 34,
-    minSdk: Int = 21,
     extName: String,
     pkgNameSuffix: String,
     extClass: String,
@@ -90,12 +91,13 @@ fun Project.setupTachiyomiExtensionConfiguration(
     libVersion: LibVersion = LibVersion.V4,
     readmeFile: RegularFile = project.layout.projectDirectory.file("README.md"),
     changelogFile: RegularFile = project.layout.projectDirectory.file("CHANGELOG.md"),
-    kotlinApiVersion: String = "1.8",
-    kotlinLanguageVersion: String = "1.9",
+    kotlinApiVersion: String = catalog.findVersion("kotlin_api").map { it.toString() }.getOrDefault(null) ?: error("Not found: libs.versions.kotlin.api"),
+    kotlinLanguageVersion: String = catalog.findVersion("kotlin_language").map { it.toString() }.getOrDefault(null) ?: error("Not found: libs.versions.kotlin.language"),
     libs: Set<TachiyomiLibrary> = setOf(TachiyomiLibrary.RandomUA),
     multisrc: Set<MultiSrc> = setOf(),
     signingConfiguration: (ApkSigningConfig.() -> Unit)? = null,
 ) {
+
     extensions.getByName<BaseAppModuleExtension>("android").apply {
         namespace = "eu.kanade.tachiyomi.extension.${namespaceIdentifier}"
         this.compileSdk = compileSdk
@@ -136,9 +138,9 @@ fun Project.setupTachiyomiExtensionConfiguration(
         }
 
         val signing = signingConfiguration ?: {
-            storeFile = rootProject.rootDir.resolve("signingkey.jks")
+            storeFile = System.getenv("KEY_FILE_NAME")?.let { rootProject.rootDir.resolve(it) }
             storePassword = System.getenv("KEY_STORE_PASSWORD")
-            keyAlias = System.getenv("ALIAS")
+            keyAlias = System.getenv("KEY_STORE_ALIAS")
             keyPassword = System.getenv("KEY_PASSWORD")
         }
 
@@ -181,7 +183,7 @@ fun Project.setupTachiyomiExtensionConfiguration(
     }
 
     dependencies {
-        "compileOnly"(compileBundle)
+        "compileOnly"(catalog.findBundle("extension_compile").get())
 
         libs.forEach { lib ->
             "implementation"(project(":lib-${lib.identifier}"))
@@ -190,5 +192,13 @@ fun Project.setupTachiyomiExtensionConfiguration(
         multisrc.forEach { multi ->
             "implementation"(project("multisrc-${multi.identifier}"))
         }
+    }
+
+    project(":").tasks.named("assembleExtensionsForDebug") {
+        it.dependsOn(project.tasks.named("assembleDebug"))
+    }
+
+    project(":").tasks.named("assembleExtensionsForRelease") {
+        it.dependsOn(project.tasks.named("assembleRelease"))
     }
 }

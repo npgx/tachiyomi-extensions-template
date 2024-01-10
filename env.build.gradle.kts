@@ -10,14 +10,8 @@ tasks {
     }
 }
 
-val compileExtensionsForRelease by tasks.registering(DefaultTask::class) {
-    doLast {
+val assembleExtensionsForDebug by tasks.registering(DefaultTask::class)
+val assembleExtensionsForRelease by tasks.registering(DefaultTask::class)
 
-    }
-}
-
-val compileExtensionsForDebug by tasks.registering(DefaultTask::class) {
-    doLast {
-
-    }
-}
+val compileLibsKotlin by tasks.registering(DefaultTask::class)
+val compileMultiSrcKotlin by tasks.registering(DefaultTask::class)
