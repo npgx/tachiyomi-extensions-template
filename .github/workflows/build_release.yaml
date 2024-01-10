@@ -2,7 +2,7 @@
 # If you want to modify the workflow, please change the Kotlin file and regenerate this YAML file.
 # Generated with https://github.com/typesafegithub/github-workflows-kt
 
-name: 'Compile Release'
+name: 'Construct Release'
 on:
   workflow_dispatch: {}
   push:
@@ -10,8 +10,6 @@ on:
     - 'master'
     paths-ignore:
     - '**.md'
-    tags:
-    - 'build_release'
 permissions:
   contents: 'write'
 concurrency:
@@ -31,8 +29,8 @@ jobs:
     - id: 'step-2'
       name: 'Consistency check'
       run: 'git diff --exit-code ''.github/workflows/build_release.yaml'''
-  compile_release:
-    name: 'Compile Extensions for release'
+  assemble_release:
+    name: 'Construct Release extensions repository'
     runs-on: 'ubuntu-latest'
     needs:
     - 'check_yaml_consistency'
@@ -56,14 +54,21 @@ jobs:
       name: 'Prepare signing key'
       run: 'echo ${{ secrets.KEY_STORE }} | base64 -d > ${{ secrets.KEY_FILE_NAME }}'
     - id: 'step-5'
-      name: 'Compile for release'
+      name: 'Construct release Repo'
       env:
         KEY_FILE_NAME: '${{ secrets.KEY_FILE_NAME }}'
         KEY_STORE_PASSWORD: '${{ secrets.KEY_STORE_PASSWORD }}'
         KEY_STORE_ALIAS: '${{ secrets.KEY_STORE_ALIAS }}'
         KEY_PASSWORD: '${{ secrets.KEY_PASSWORD }}'
-      run: './gradlew :assembleExtensionsForRelease'
+      run: './gradlew :constructReleaseRepo'
     - id: 'step-6'
+      name: 'Upload repo'
+      uses: 'actions/upload-artifact@v4'
+      with:
+        name: 'release-repo'
+        path: '/build/repo/release/**'
+        retention-days: '1'
+    - id: 'step-7'
       name: 'Clean up CI files'
       run: 'rm ${{ secrets.KEY_FILE_NAME }}'
       if: '${{ always() }}'

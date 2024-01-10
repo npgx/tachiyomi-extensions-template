@@ -1,14 +1,31 @@
 import com.android.build.api.dsl.ApkSigningConfig
+import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
+import de.undercouch.gradle.tasks.download.Download
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import org.gradle.api.DefaultTask
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalog
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.RegularFile
+import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.getByName
+import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
+import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.util.archivesName
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.ByteArrayOutputStream
+import java.net.URL
 import kotlin.jvm.optionals.getOrDefault
 
 sealed class LibVersion(val versionName: String) {
@@ -76,6 +93,18 @@ sealed class MultiSrc(val identifier: String) {
     data object ZManga : MultiSrc("zmanga")
 }
 
+private fun Project.getAAPT2Command(): Provider<String> {
+    return extensions.getByName<ApplicationAndroidComponentsExtension>("androidComponents")
+        .sdkComponents
+        .aidl
+        .map { it.executable.get() }
+        .map { it.asFile.parentFile }
+        .map { it.resolve("aapt2") }
+        .map { it.absoluteFile.path }
+}
+
+private fun Boolean.as1or0() = if (this) 1 else 0
+
 fun Project.setupTachiyomiExtensionConfiguration(
     @Suppress("UNUSED_PARAMETER") vararg useParameterNames: Unit = emptyArray(),
     catalog: VersionCatalog = extensions.getByName<VersionCatalogsExtension>("versionCatalogs").named("libs"),
@@ -95,8 +124,17 @@ fun Project.setupTachiyomiExtensionConfiguration(
     kotlinLanguageVersion: String = catalog.findVersion("kotlin_language").map { it.toString() }.getOrDefault(null) ?: error("Not found: libs.versions.kotlin.language"),
     libs: Set<TachiyomiLibrary> = setOf(TachiyomiLibrary.RandomUA),
     multisrc: Set<MultiSrc> = setOf(),
+    useDefaultManifest: Boolean = true,
+    includeStdLibInApk: Boolean = true,
+    aapt2Command: Provider<String> = getAAPT2Command(),
+    versionName: String = "${libVersion.versionName}.${extVersionCode}",
+    archivesBaseName: String = "tachiyomi-$pkgNameSuffix-v${versionName}",
+    includeInBatchDebug: Boolean = true,
+    includeInBatchRelease: Boolean = includeInBatchDebug,
     signingConfiguration: (ApkSigningConfig.() -> Unit)? = null,
 ) {
+
+    this.archivesName.set(archivesBaseName)
 
     extensions.getByName<BaseAppModuleExtension>("android").apply {
         namespace = "eu.kanade.tachiyomi.extension.${namespaceIdentifier}"
@@ -125,15 +163,15 @@ fun Project.setupTachiyomiExtensionConfiguration(
             this.targetSdk = compileSdk
             applicationIdSuffix = pkgNameSuffix
             versionCode = extVersionCode
-            versionName = "${libVersion.versionName}.${extVersionCode}"
+            this.versionName = versionName
 
             addManifestPlaceholders(buildMap {
                 put("appName", "Tachiyomi: $extName")
                 put("extClass", extClass)
                 put("extFactory", extFactory)
-                put("nsfw", isNsfw)
-                put("hasReadme", readmeFile.asFile.exists())
-                put("hasChangelog", changelogFile.asFile.exists())
+                put("nsfw", isNsfw.as1or0())
+                put("hasReadme", readmeFile.asFile.exists().as1or0())
+                put("hasChangelog", changelogFile.asFile.exists().as1or0())
             })
         }
 
@@ -152,6 +190,12 @@ fun Project.setupTachiyomiExtensionConfiguration(
             release {
                 signingConfig = signingConfigs.findByName("release")
                 isMinifyEnabled = false
+                isDebuggable = false
+            }
+
+            debug {
+                isMinifyEnabled = false
+                isDebuggable = true
             }
         }
 
@@ -185,6 +229,16 @@ fun Project.setupTachiyomiExtensionConfiguration(
     dependencies {
         "compileOnly"(catalog.findBundle("extension_compile").get())
 
+        if (useDefaultManifest) {
+            "implementation"(project(":default"))
+        }
+
+        if (includeStdLibInApk) {
+            "implementation"(catalog.findLibrary("kotlin_stdlib").get())
+        } else {
+            "compileOnly"(catalog.findLibrary("kotlin_stdlib").get())
+        }
+
         libs.forEach { lib ->
             "implementation"(project(":lib-${lib.identifier}"))
         }
@@ -194,11 +248,128 @@ fun Project.setupTachiyomiExtensionConfiguration(
         }
     }
 
-    project(":").tasks.named("assembleExtensionsForDebug") {
-        it.dependsOn(project.tasks.named("assembleDebug"))
-    }
+    afterEvaluate { extension ->
 
-    project(":").tasks.named("assembleExtensionsForRelease") {
-        it.dependsOn(project.tasks.named("assembleRelease"))
+        val variants = when {
+            includeInBatchDebug && includeInBatchRelease -> listOf("debug", "release")
+            includeInBatchDebug -> listOf("debug")
+            includeInBatchRelease -> listOf("release")
+            else -> emptyList()
+        }
+
+        // jitpack doesn't work
+        val downloadInspector: TaskProvider<Download> = tasks.register<Download>("downloadInspector") {
+            val url = URL("""https://api.github.com/repos/tachiyomiorg/tachiyomi-extensions-inspector/releases/latest""")
+            val data = Json.parseToJsonElement(String(url.readBytes()))
+            val inspectorURL = data.jsonObject["assets"]!!.jsonArray[0].jsonObject["browser_download_url"]!!.jsonPrimitive.content
+            src(inspectorURL)
+            dest(layout.buildDirectory.file("inspector.jar"))
+            overwrite(false)
+            onlyIfModified(true)
+        }
+
+        variants.forEach { variant ->
+            val capitalVariant = variant.replaceFirstChar { it.uppercase() }
+
+            val dir = layout.buildDirectory.dir("outputs/apk/$variant").get()
+
+            val apk = dir.file("${archivesBaseName}-${variant}.apk").asFile
+            val json = dir.file("${apk.nameWithoutExtension}.json").asFile
+            val png = dir.file("${apk.nameWithoutExtension}.png").asFile
+            val inspectorOutput = dir.file("${apk.nameWithoutExtension}.inspector.json").asFile
+
+            val assembleTask = tasks.named("assemble${capitalVariant}")
+
+            val inspectTask = tasks.register<Exec>("inspect${capitalVariant}") {
+                dependsOn(assembleTask)
+                dependsOn(downloadInspector)
+
+                outputs.file(inspectorOutput)
+
+                workingDir(dir)
+
+                executable("java")
+                args(
+                    "-jar",
+                    downloadInspector.get().outputs.files.singleFile.absolutePath,
+                    apk.name,
+                    inspectorOutput.name,
+                    "temp-${apk.nameWithoutExtension}",
+                )
+
+                doFirst {
+                    println("Running: $commandLine")
+                    println("In: $workingDir")
+                    println("Contents: ${workingDir.listFiles()?.map { it.name }}")
+                }
+            }
+
+            val createRepoDataTask = tasks.register<Exec>("create${capitalVariant}RepoData") {
+                dependsOn(assembleTask)
+                dependsOn(inspectTask)
+
+                val baos = ByteArrayOutputStream()
+                standardOutput = baos
+
+                workingDir(dir)
+                executable(aapt2Command.get())
+                args(
+                    "dump",
+                    "badging",
+                    "--include-meta-data",
+                    apk.name,
+                )
+
+                outputs.files(json, png)
+
+                doFirst {
+                    println("Running: $commandLine")
+                    println("In: $workingDir")
+                    println("Contents: ${workingDir.listFiles()?.map { it.name }}")
+                }
+
+                doLast {
+                    copy { cp ->
+                        cp.duplicatesStrategy = DuplicatesStrategy.INCLUDE
+                        cp.from(zipTree(apk))
+                        cp.include { e ->
+                            e.name == "ic_launcher.png" &&
+                                e.path.contains("mipmap-xhdpi-v4")
+                        }
+                        cp.into(apk.resolveSibling("${apk.name}-icons").apply { mkdir() })
+                    }
+
+                    copy { cp ->
+                        cp.duplicatesStrategy = DuplicatesStrategy.INCLUDE
+                        cp.from(fileTree(apk.resolveSibling("${apk.name}-icons")).files)
+                        cp.rename { png.name }
+                        cp.into(apk.parentFile)
+                    }
+
+                    json.apply { createNewFile() }
+                        .writeText(
+                            Json.encodeToString(
+                                createRepoData(
+                                    raw = String(baos.toByteArray()),
+                                    inspectorOutput = inspectTask.get().outputs.files.singleFile.readText(),
+                                    baseName = apk.nameWithoutExtension,
+                                )
+                            )
+                        )
+
+                    println("Contents After: ${workingDir.listFiles()?.map { it.name }}")
+                }
+            }
+
+            project(":").tasks.named<DefaultTask>("construct${capitalVariant}Repo") {
+                dependsOn(assembleTask)
+                dependsOn(createRepoDataTask)
+                dependsOn(inspectTask)
+
+                inputs.file(apk)
+                inputs.file(json)
+                inputs.file(png)
+            }
+        }
     }
 }

@@ -1,3 +1,7 @@
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
+
 plugins {
     base
 }
@@ -10,8 +14,67 @@ tasks {
     }
 }
 
-val assembleExtensionsForDebug by tasks.registering(DefaultTask::class)
-val assembleExtensionsForRelease by tasks.registering(DefaultTask::class)
+buildscript {
+    dependencies {
+        classpath(libs.kotlin.json)
+        classpath(libs.nanoHTTPD)
+    }
+}
 
-val compileLibsKotlin by tasks.registering(DefaultTask::class)
-val compileMultiSrcKotlin by tasks.registering(DefaultTask::class)
+val repo: Directory = rootProject.layout.buildDirectory.dir("repo").get()
+val prettyJson = Json { prettyPrint = true }
+
+val cleanseRootBuildDir by tasks.registering(Delete::class) {
+    delete(project.layout.buildDirectory)
+}
+
+val cleanseAll by tasks.registering(Delete::class)
+
+gradle.projectsEvaluated {
+    allprojects {
+        cleanseAll.configure {
+            delete(layout.buildDirectory)
+        }
+    }
+}
+
+val compileLibsKotlin: TaskProvider<DefaultTask> by tasks.registering(DefaultTask::class)
+val compileMultiSrcKotlin: TaskProvider<DefaultTask> by tasks.registering(DefaultTask::class)
+
+listOf("debug", "release").forEach { variant ->
+    val capitalVariant = variant.replaceFirstChar { it.uppercase() }
+
+    tasks.register<DefaultTask>("construct${capitalVariant}Repo") {
+        dependsOn(cleanseRootBuildDir)
+
+        val repo = repo.dir(variant)
+        outputs.dir(repo)
+
+        doLast {
+            val allJson = inputs.files.filter { it.extension == "apk" }.map { apk ->
+                val png = apk.resolveSibling("${apk.nameWithoutExtension}.png")
+
+                copy {
+                    from(apk)
+                    into(repo.dir("apk"))
+                }
+                copy {
+                    from(png)
+                    into(repo.dir("png"))
+                }
+
+                apk.resolveSibling("${apk.nameWithoutExtension}.json")
+            }.joinToString(",", "[", "]") { it.readText() }
+
+            val index = Json.parseToJsonElement(allJson)
+
+            repo.file("index.min.json").asFile
+                .apply { createNewFile() }
+                .writeText(Json.encodeToString(index))
+
+            repo.file("index.json").asFile
+                .apply { createNewFile() }
+                .writeText(prettyJson.encodeToString(index))
+        }
+    }
+}

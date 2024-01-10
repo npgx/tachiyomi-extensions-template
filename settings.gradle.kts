@@ -37,6 +37,8 @@ rootProject.apply {
 
 includeBuild(rootProject.projectDir.resolve("build-src").resolve("conventions"))
 
+include(":default")
+
 fun includeAllSubprojectsIn(dir: File, prefix: String, expectedScriptName: String? = "build.gradle") {
     if (!dir.exists() || !dir.isDirectory) return
 

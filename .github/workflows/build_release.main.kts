@@ -5,6 +5,7 @@
 
 import io.github.typesafegithub.workflows.actions.actions.CheckoutV4
 import io.github.typesafegithub.workflows.actions.actions.SetupJavaV4
+import io.github.typesafegithub.workflows.actions.actions.UploadArtifactV4
 import io.github.typesafegithub.workflows.actions.gradle.GradleBuildActionV2
 import io.github.typesafegithub.workflows.actions.gradle.WrapperValidationActionV1
 import io.github.typesafegithub.workflows.domain.Concurrency
@@ -19,8 +20,8 @@ import io.github.typesafegithub.workflows.dsl.workflow
 import io.github.typesafegithub.workflows.yaml.writeToFile
 
 workflow(
-    name = "Compile Release",
-    on = listOf(WorkflowDispatch(), Push(branches = listOf("master"), tags = listOf("build_release"), pathsIgnore = listOf("**.md"))),
+    name = "Construct Release",
+    on = listOf(WorkflowDispatch(), Push(branches = listOf("master"), pathsIgnore = listOf("**.md"))),
     sourceFile = __FILE__.toPath(),
     concurrency = Concurrency(group = expr { github.workflow }, cancelInProgress = true),
     permissions = mapOf(Permission.Contents to Mode.Write),
@@ -28,8 +29,8 @@ workflow(
 ) {
 
     job(
-        id = "compile_release",
-        name = "Compile Extensions for release",
+        id = "assemble_release",
+        name = "Construct Release extensions repository",
         runsOn = UbuntuLatest,
         env = linkedMapOf(),
         outputs = object : JobOutputs() {}
@@ -41,13 +42,21 @@ workflow(
 
         run(name = "Prepare signing key", command = "echo ${expr { secrets["KEY_STORE"]!! }} | base64 -d > ${expr { secrets["KEY_FILE_NAME"]!! }}")
         run(
-            name = "Compile for release",
-            command = "./gradlew :assembleExtensionsForRelease",
+            name = "Construct release Repo",
+            command = "./gradlew :constructReleaseRepo",
             env = linkedMapOf(
                 "KEY_FILE_NAME" to expr { secrets["KEY_FILE_NAME"]!! },
                 "KEY_STORE_PASSWORD" to expr { secrets["KEY_STORE_PASSWORD"]!! },
                 "KEY_STORE_ALIAS" to expr { secrets["KEY_STORE_ALIAS"]!! },
                 "KEY_PASSWORD" to expr { secrets["KEY_PASSWORD"]!! },
+            )
+        )
+
+        uses(
+            name = "Upload repo", action = UploadArtifactV4(
+                name = "release-repo",
+                path = listOf("/build/repo/release/**"),
+                retentionDays = UploadArtifactV4.RetentionPeriod.Value(1)
             )
         )
 

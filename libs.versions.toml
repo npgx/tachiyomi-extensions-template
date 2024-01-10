@@ -17,22 +17,24 @@ sdk_compile = "34"
 [plugins]
 
 [libraries]
-gradle_kotlinter = { module = "org.jmailen.gradle:kotlinter-gradle", version = "3.13.0" }
+gradle_kotlinter = { group = "org.jmailen.gradle", name = "kotlinter-gradle", version = "3.13.0" }
 
-tachiyomi_lib = { module = "com.github.tachiyomiorg:extensions-lib", version.ref = "tachiyomi_lib" }
+tachiyomi_lib = { group = "com.github.tachiyomiorg", name = "extensions-lib", version.ref = "tachiyomi_lib" }
 
-kotlin_stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin_target" }
-kotlin_protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlin_serialization" }
-kotlin_json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlin_serialization" }
+kotlin_stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8", version.ref = "kotlin_target" }
+kotlin_protobuf = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-protobuf", version.ref = "kotlin_serialization" }
+kotlin_json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlin_serialization" }
 
-coroutines_core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlin_coroutines" }
-coroutines_android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlin_coroutines" }
+coroutines_core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlin_coroutines" }
+coroutines_android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlin_coroutines" }
 
-injekt_core = { module = "com.github.inorichi.injekt:injekt-core", version = "65b0440" }
-rxjava = { module = "io.reactivex:rxjava", version = "1.3.8" }
-jsoup = { module = "org.jsoup:jsoup", version = "1.15.1" }
-okhttp = { module = "com.squareup.okhttp3:okhttp", version = "5.0.0-alpha.11" }
-quickjs = { module = "app.cash.quickjs:quickjs-android", version = "0.9.2" }
+injekt_core = { group = "com.github.inorichi.injekt", name = "injekt-core", version = "65b0440" }
+rxjava = { group = "io.reactivex", name = "rxjava", version = "1.3.8" }
+jsoup = { group = "org.jsoup", name = "jsoup", version = "1.15.1" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version = "5.0.0-alpha.11" }
+quickjs = { group = "app.cash.quickjs", name = "quickjs-android", version = "0.9.2" }
+
+nanoHTTPD = { group = "org.nanohttpd", name = "nanohttpd", version = "2.3.1" }
 
 [bundles]
 extension_compile = ["tachiyomi-lib", "kotlin-protobuf", "kotlin-json", "coroutines-core", "coroutines-android", "injekt-core", "rxjava", "jsoup", "okhttp", "quickjs"]
