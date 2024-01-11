@@ -14,6 +14,8 @@ import io.github.typesafegithub.workflows.domain.JobOutputs
 import io.github.typesafegithub.workflows.domain.Mode
 import io.github.typesafegithub.workflows.domain.Permission
 import io.github.typesafegithub.workflows.domain.RunnerType.UbuntuLatest
+import io.github.typesafegithub.workflows.domain.actions.Action
+import io.github.typesafegithub.workflows.domain.actions.RegularAction
 import io.github.typesafegithub.workflows.domain.triggers.Push
 import io.github.typesafegithub.workflows.domain.triggers.WorkflowDispatch
 import io.github.typesafegithub.workflows.dsl.expressions.expr
@@ -89,22 +91,46 @@ workflow(
             appendLine("shopt -u extglob")
             appendLine("ls -AR .")
         })
-        run(name = "Copy new contents", command = "cp -a ~/release/ .")
+        run(name = "Copy new contents", command = "cp -a ~/release/ ./repo")
         run(name = "Set email and name", command = buildString {
             appendLine("git config --global user.email \"github-actions[bot]@users.noreply.github.com\"")
             appendLine("git config --global user.name \"github-actions[bot]\"")
         })
         run(name = "Commit if necessary", command = buildString {
+            appendLine("cd ./repo")
             appendLine("ls -AR .")
             appendLine("git status")
             appendLine("if [ -n \"\$(git status --porcelain)\" ]; then")
             appendLine("    git add .")
             appendLine("    git commit -m \"Update repo\"")
             appendLine("    git push")
+            appendLine("    echo \"Repository updated\"")
             appendLine("else")
             appendLine("    echo \"No changes to commit\"")
             appendLine("fi")
         })
+
+        class PurgeJsDelivrCacheV1(private val url: List<String>, private val attempts: Int? = null) : RegularAction<Action.Outputs>("gacts", "purge-jsdelivr-cache", "v1") {
+            override fun toYamlArguments(): LinkedHashMap<String, String> = LinkedHashMap<String, String>().apply {
+                put("url", url.joinToString("\n"))
+                attempts?.let { put("attempts", attempts.toString()) }
+            }
+
+            override fun buildOutputObject(stepId: String): Outputs = Outputs(stepId)
+        }
+
+        // jsDelivr url should be of the form: https://cdn.jsdelivr.net/gh/{username}/{repo}@{branch}/{path/to/file}
+        uses(
+            name = "Purge JsDelivr Cache",
+            env = linkedMapOf("REPOSITORY_NAME" to expr { github.repository }),
+            action = PurgeJsDelivrCacheV1(
+                url = listOf(
+                    """https://cdn.jsdelivr.net/gh/${expr { env["REPOSITORY_NAME"]!! }}@repo/index.json""",
+                    """https://cdn.jsdelivr.net/gh/${expr { env["REPOSITORY_NAME"]!! }}@repo/index.min.json""",
+                ),
+                attempts = 3,
+            ),
+        )
     }
 
 }.writeToFile()

@@ -112,7 +112,7 @@ jobs:
         ls -AR .
     - id: 'step-6'
       name: 'Copy new contents'
-      run: 'cp -a ~/release/ .'
+      run: 'cp -a ~/release/ ./repo'
     - id: 'step-7'
       name: 'Set email and name'
       run: |
@@ -121,12 +121,24 @@ jobs:
     - id: 'step-8'
       name: 'Commit if necessary'
       run: |
+        cd ./repo
         ls -AR .
         git status
         if [ -n "$(git status --porcelain)" ]; then
             git add .
             git commit -m "Update repo"
             git push
+            echo "Repository updated"
         else
             echo "No changes to commit"
         fi
+    - id: 'step-9'
+      name: 'Purge JsDelivr Cache'
+      uses: 'gacts/purge-jsdelivr-cache@v1'
+      with:
+        url: |-
+          https://cdn.jsdelivr.net/gh/${{ REPOSITORY_NAME }}@repo/index.json
+          https://cdn.jsdelivr.net/gh/${{ REPOSITORY_NAME }}@repo/index.min.json
+        attempts: '3'
+      env:
+        REPOSITORY_NAME: '${{ github.repository }}'
