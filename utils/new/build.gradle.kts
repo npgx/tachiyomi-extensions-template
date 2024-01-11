@@ -43,13 +43,24 @@ buildscript {
 }
 
 setupTachiyomiExtensionConfiguration(
-    namespaceIdentifier = "changeme", // will appear after eu.kanade.tachiyomi.extension
-    extName = "Change Me",            // name of the extension, will appear after "Tachiyomi: "
-    pkgNameSuffix = "changeme",       // convention is to use lowercase only letters (or numbers) version of extName
-    extClass = ".ChangeMe",           // name of the class that is located in eu.kanade.tachiyomi.extension.{namespaceIdentifier}.{pkgNameSuffix}{extClass}
+    // will appear after eu.kanade.tachiyomi.extension
+    namespaceIdentifier = "changeme",
+    
+    // name of the extension, will appear after "Tachiyomi: "
+    extName = "$identifier",
+    
+    // convention is to use lowercase only letters (or numbers) version of extName
+    pkgNameSuffix = "$identifier",
+    
+    // name of the class that is located in eu.kanade.tachiyomi.extension.{namespaceIdentifier}.{pkgNameSuffix}{extClass}
+    extClass = ".${identifier.replaceFirstChar { it.uppercase() }}",
     // NOTE:    ^ the dot here is needed and intentional
-    extVersionCode = 1,               // should increase it after a release
-    isNsfw = false,                   // whether or not the extension manages Not Safe For Work content
+    
+    // should increase it after a release
+    extVersionCode = 1,
+    
+    // whether or not the extension manages Not Safe For Work content
+    isNsfw = false,
 )
 
             """.trimIndent()

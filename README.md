@@ -1,21 +1,21 @@
-### What is this?
+# Tachiyomi extensions template
 
-This is the repository containing my own [tachiyomi](https://tachiyomi.org/)
-[extensions](https://tachiyomi.org/extensions/)
+## What is this?
 
-### What this is not
+This is a template repository to ease the creation of a repository repo for
+[tachiyomi](https://tachiyomi.org/) [extensions](https://tachiyomi.org/extensions/).
 
-I will not accept source requests, this repository is only for sources I personally use.
-I re-created the build logic almost from scratch with some help from the original
-extensions repo and [ThePBone's one](https://github.com/ThePBone/tachiyomi-extensions-revived/).
-I will create a repository template at a later date once I remove the rough edges to make
-the process of creating one's own repository much easier.
+It provides some tools for a more modern and developer friendly environment.
 
-### What extensions are contained in this repository?
+## How do I use this?
 
-As of now:
+Go see [The guide](./GUIDE.md) for a step-by-step process.
 
-- [Project Suki](./extensions/projectsuki/README.md)
+### Known Issues
+
+- As of now, tachiyomi doesn't allow local IPs to be used as repositories (to test stuff),
+  and everything (issues, PRs, Discord) has been locked down.
+  That being the case, the tools are already available.
 
 ## License
 
