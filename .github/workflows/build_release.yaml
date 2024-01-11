@@ -112,7 +112,7 @@ jobs:
         ls -AR .
     - id: 'step-6'
       name: 'Copy new contents'
-      run: 'cp -a ~/release/ ./repo'
+      run: 'cp -aT ~/release/ ./repo'
     - id: 'step-7'
       name: 'Set email and name'
       run: |
@@ -137,8 +137,6 @@ jobs:
       uses: 'gacts/purge-jsdelivr-cache@v1'
       with:
         url: |-
-          https://cdn.jsdelivr.net/gh/${{ REPOSITORY_NAME }}@repo/index.json
-          https://cdn.jsdelivr.net/gh/${{ REPOSITORY_NAME }}@repo/index.min.json
+          https://cdn.jsdelivr.net/gh/${{ github.repository }}@repo/index.json
+          https://cdn.jsdelivr.net/gh/${{ github.repository }}@repo/index.min.json
         attempts: '3'
-      env:
-        REPOSITORY_NAME: '${{ github.repository }}'

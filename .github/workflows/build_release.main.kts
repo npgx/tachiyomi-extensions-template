@@ -91,7 +91,7 @@ workflow(
             appendLine("shopt -u extglob")
             appendLine("ls -AR .")
         })
-        run(name = "Copy new contents", command = "cp -a ~/release/ ./repo")
+        run(name = "Copy new contents", command = "cp -aT ~/release/ ./repo")
         run(name = "Set email and name", command = buildString {
             appendLine("git config --global user.email \"github-actions[bot]@users.noreply.github.com\"")
             appendLine("git config --global user.name \"github-actions[bot]\"")
@@ -122,11 +122,10 @@ workflow(
         // jsDelivr url should be of the form: https://cdn.jsdelivr.net/gh/{username}/{repo}@{branch}/{path/to/file}
         uses(
             name = "Purge JsDelivr Cache",
-            env = linkedMapOf("REPOSITORY_NAME" to expr { github.repository }),
             action = PurgeJsDelivrCacheV1(
                 url = listOf(
-                    """https://cdn.jsdelivr.net/gh/${expr { env["REPOSITORY_NAME"]!! }}@repo/index.json""",
-                    """https://cdn.jsdelivr.net/gh/${expr { env["REPOSITORY_NAME"]!! }}@repo/index.min.json""",
+                    """https://cdn.jsdelivr.net/gh/${expr { github.repository }}@repo/index.json""",
+                    """https://cdn.jsdelivr.net/gh/${expr { github.repository }}@repo/index.min.json""",
                 ),
                 attempts = 3,
             ),
