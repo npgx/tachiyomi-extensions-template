@@ -71,7 +71,7 @@ workflow(
         runsOn = UbuntuLatest,
         env = linkedMapOf(),
         needs = listOf(assembleRelease),
-        `if` = """'true' == ${expr { env["DO_PUBLISH_REPO"]!! }}""",
+        `if` = """'true' == ${expr { "vars.DO_PUBLISH_REPO" }}""",
         outputs = object : JobOutputs() {},
     ) {
 

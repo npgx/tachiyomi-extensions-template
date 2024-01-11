@@ -79,7 +79,7 @@ jobs:
     needs:
     - 'assemble_release'
     - 'check_yaml_consistency'
-    if: '''true'' == ${{ DO_PUBLISH_REPO }}'
+    if: '''true'' == ${{ vars.DO_PUBLISH_REPO }}'
     steps:
     - id: 'step-0'
       name: 'Checkout repo branch'
