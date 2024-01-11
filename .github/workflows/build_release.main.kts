@@ -28,7 +28,7 @@ workflow(
     env = linkedMapOf(),
 ) {
 
-    job(
+    val assembleRelease = job(
         id = "assemble_release",
         name = "Construct Release extensions repository",
         runsOn = UbuntuLatest,
@@ -55,7 +55,7 @@ workflow(
         uses(
             name = "Upload repo", action = UploadArtifactV4(
                 name = "release-repo",
-                path = listOf("/build/repo/release/**"),
+                path = listOf("./build/repo/release/"),
                 retentionDays = UploadArtifactV4.RetentionPeriod.Value(1)
             )
         )

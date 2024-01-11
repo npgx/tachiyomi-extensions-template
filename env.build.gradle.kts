@@ -84,6 +84,11 @@ listOf("debug", "release").forEach { variant ->
             repo.file("index.json").asFile
                 .apply { createNewFile() }
                 .writeText(prettyJson.encodeToString(index))
+
+            println("$capitalVariant repo (${repo.asFile.invariantSeparatorsPath}) contents:")
+            fileTree(repo).forEach { file ->
+                println(file.relativeTo(repo.asFile).invariantSeparatorsPath)
+            }
         }
     }
 }
