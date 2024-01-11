@@ -7,6 +7,8 @@ kotlin_gradleCompatible = "1.9.20"
 kotlin_coroutines = "1.6.4"
 kotlin_serialization = "1.4.0"
 
+kotlin_ktor = "2.3.7"
+
 android_gradlePlugin = "8.2.1"
 
 tachiyomi_lib = "1.4.4"
@@ -20,6 +22,8 @@ sdk_compile = "34"
 gradle_kotlinter = { group = "org.jmailen.gradle", name = "kotlinter-gradle", version = "3.13.0" }
 
 tachiyomi_lib = { group = "com.github.tachiyomiorg", name = "extensions-lib", version.ref = "tachiyomi_lib" }
+
+kotlin_ktor = { group = "io.ktor", name = "ktor-server-netty", version.ref = "kotlin_ktor" }
 
 kotlin_stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8", version.ref = "kotlin_target" }
 kotlin_protobuf = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-protobuf", version.ref = "kotlin_serialization" }

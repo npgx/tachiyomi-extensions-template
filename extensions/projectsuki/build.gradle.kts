@@ -1,6 +1,3 @@
-import com.android.build.gradle.internal.services.Aapt2Input
-import com.android.tools.build.bundletool.androidtools.Aapt2Command
-
 plugins {
     id("com.android.application") version libs.versions.android.gradlePlugin
     kotlin("android") version libs.versions.kotlin.target
@@ -21,5 +18,4 @@ setupTachiyomiExtensionConfiguration(
     extClass = ".ProjectSuki",
     extVersionCode = 4,
     isNsfw = false,
-
 )

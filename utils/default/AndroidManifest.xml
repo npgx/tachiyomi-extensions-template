@@ -25,5 +25,5 @@
             android:value="${hasChangelog}" />
 
     </application>
-    
+
 </manifest>

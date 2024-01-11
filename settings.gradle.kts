@@ -31,13 +31,18 @@ plugins {
 }
 
 rootProject.apply {
-    name = "npgx-tachiyomi-extensions"
+    name = "npgx-tachiyomi"
     buildFileName = "env.build.gradle.kts"
 }
 
 includeBuild(rootProject.projectDir.resolve("build-src").resolve("conventions"))
 
-include(":default")
+listOf("default", "serve", "new").forEach { prj ->
+    include(":${prj}")
+    project(":${prj}").apply {
+        projectDir = rootProject.projectDir.resolve("utils").resolve(prj)
+    }
+}
 
 fun includeAllSubprojectsIn(dir: File, prefix: String, expectedScriptName: String? = "build.gradle") {
     if (!dir.exists() || !dir.isDirectory) return

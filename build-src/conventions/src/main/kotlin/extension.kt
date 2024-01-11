@@ -250,7 +250,7 @@ fun Project.setupTachiyomiExtensionConfiguration(
         }
     }
 
-    afterEvaluate { extension ->
+    afterEvaluate { _ ->
 
         val variants = when {
             includeInBatchDebug && includeInBatchRelease -> listOf("debug", "release")

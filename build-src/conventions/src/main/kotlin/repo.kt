@@ -101,7 +101,7 @@ sealed class AAPT2DataExtractor {
             val singleton = startOverride ?: property.name.substringBeforeLast("Regex", "").takeIf { it.isNotBlank() } ?: error("Invalid name: ${property.name}")
             val regex = """${singleton}:'([^']+)'""".toRegex(RegexOption.IGNORE_CASE)
             lazy {
-                val match = extractor.data.firstNotNullOfOrNull { regex.matchEntire(it) } ?: error("Could not find ${property.name} in ${(extractor ?: Unit)::class.simpleName}")
+                val match = extractor.data.firstNotNullOfOrNull { regex.matchEntire(it) } ?: error("Could not find ${property.name} in ${extractor::class.simpleName}")
                 match.groupValues[1]
             }
         }
