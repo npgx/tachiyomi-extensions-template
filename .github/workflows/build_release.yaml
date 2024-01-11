@@ -86,7 +86,7 @@ jobs:
       uses: 'actions/checkout@v4'
       with:
         ref: 'repo'
-        path: '~/repo'
+        path: 'repo'
     - id: 'step-1'
       name: 'Download updated release'
       uses: 'actions/download-artifact@v4'
@@ -97,18 +97,31 @@ jobs:
       name: 'Fail on error'
       run: 'set -e'
     - id: 'step-3'
-      name: 'Sync repo contents'
-      run: |
-        rsync -a --delete --exclude .git --exclude .gitignore ~/release/ ~/repo/
-        cd ~/repo
+      name: 'Show release contents'
+      run: 'ls -AR ~/release'
     - id: 'step-4'
+      name: 'Show repo contents'
+      run: 'ls -AR ./repo'
+    - id: 'step-5'
+      name: 'Delete old contents'
+      run: |
+        cd ./repo
+        shopt -s extglob
+        rm -rf !(.git)
+        shopt -u extglob
+        ls -AR .
+    - id: 'step-6'
+      name: 'Copy new contents'
+      run: 'cp -a ~/release/ .'
+    - id: 'step-7'
       name: 'Set email and name'
       run: |
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions[bot]"
-    - id: 'step-5'
+    - id: 'step-8'
       name: 'Commit if necessary'
       run: |
+        ls -AR .
         git status
         if [ -n "$(git status --porcelain)" ]; then
             git add .

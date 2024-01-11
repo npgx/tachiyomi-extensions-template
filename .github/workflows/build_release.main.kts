@@ -75,19 +75,27 @@ workflow(
         outputs = object : JobOutputs() {},
     ) {
 
-        uses(name = "Checkout repo branch", action = CheckoutV4(ref = "repo", path = "~/repo"))
+        uses(name = "Checkout repo branch", action = CheckoutV4(ref = "repo", path = "repo"))
         uses(name = "Download updated release", action = DownloadArtifactV4(name = "release-repo", path = "~/release"))
 
         run(name = "Fail on error", command = "set -e")
-        run(name = "Sync repo contents", command = buildString {
-            appendLine("rsync -a --delete --exclude .git --exclude .gitignore ~/release/ ~/repo/")
-            appendLine("cd ~/repo")
+        run(name = "Show release contents", command = "ls -AR ~/release")
+        run(name = "Show repo contents", command = "ls -AR ./repo")
+
+        run(name = "Delete old contents", command = buildString {
+            appendLine("cd ./repo")
+            appendLine("shopt -s extglob")
+            appendLine("rm -rf !(.git)")
+            appendLine("shopt -u extglob")
+            appendLine("ls -AR .")
         })
+        run(name = "Copy new contents", command = "cp -a ~/release/ .")
         run(name = "Set email and name", command = buildString {
             appendLine("git config --global user.email \"github-actions[bot]@users.noreply.github.com\"")
             appendLine("git config --global user.name \"github-actions[bot]\"")
         })
         run(name = "Commit if necessary", command = buildString {
+            appendLine("ls -AR .")
             appendLine("git status")
             appendLine("if [ -n \"\$(git status --porcelain)\" ]; then")
             appendLine("    git add .")
