@@ -4,6 +4,7 @@
 @file:Suppress("PropertyName")
 
 import io.github.typesafegithub.workflows.actions.actions.CheckoutV4
+import io.github.typesafegithub.workflows.actions.actions.DownloadArtifactV4
 import io.github.typesafegithub.workflows.actions.actions.SetupJavaV4
 import io.github.typesafegithub.workflows.actions.actions.UploadArtifactV4
 import io.github.typesafegithub.workflows.actions.gradle.GradleBuildActionV2
@@ -33,7 +34,7 @@ workflow(
         name = "Construct Release extensions repository",
         runsOn = UbuntuLatest,
         env = linkedMapOf(),
-        outputs = object : JobOutputs() {}
+        outputs = object : JobOutputs() {},
     ) {
         uses(name = "Clone repo", action = CheckoutV4())
         uses(name = "Validate Gradle Wrapper", action = WrapperValidationActionV1())
@@ -56,11 +57,46 @@ workflow(
             name = "Upload repo", action = UploadArtifactV4(
                 name = "release-repo",
                 path = listOf("./build/repo/release/"),
+                ifNoFilesFound = UploadArtifactV4.BehaviorIfNoFilesFound.Error,
                 retentionDays = UploadArtifactV4.RetentionPeriod.Value(1)
             )
         )
 
         run(name = "Clean up CI files", `if` = expr { always() }, command = "rm ${expr { secrets["KEY_FILE_NAME"]!! }}")
+    }
+
+    val publishRepo = job(
+        id = "publish_repo",
+        name = "Publish release repo",
+        runsOn = UbuntuLatest,
+        env = linkedMapOf(),
+        needs = listOf(assembleRelease),
+        `if` = """'true' == ${expr { env["DO_PUBLISH_REPO"]!! }}""",
+        outputs = object : JobOutputs() {},
+    ) {
+
+        uses(name = "Checkout repo branch", action = CheckoutV4(ref = "repo", path = "~/repo"))
+        uses(name = "Download updated release", action = DownloadArtifactV4(name = "release-repo", path = "~/release"))
+
+        run(name = "Fail on error", command = "set -e")
+        run(name = "Sync repo contents", command = buildString {
+            appendLine("rsync -a --delete --exclude .git --exclude .gitignore ~/release/ ~/repo/")
+            appendLine("cd ~/repo")
+        })
+        run(name = "Set email and name", command = buildString {
+            appendLine("git config --global user.email \"github-actions[bot]@users.noreply.github.com\"")
+            appendLine("git config --global user.name \"github-actions[bot]\"")
+        })
+        run(name = "Commit if necessary", command = buildString {
+            appendLine("git status")
+            appendLine("if [ -n \"\$(git status --porcelain)\" ]; then")
+            appendLine("    git add .")
+            appendLine("    git commit -m \"Update repo\"")
+            appendLine("    git push")
+            appendLine("else")
+            appendLine("    echo \"No changes to commit\"")
+            appendLine("fi")
+        })
     }
 
 }.writeToFile()

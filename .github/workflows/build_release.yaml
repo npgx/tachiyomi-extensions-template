@@ -67,8 +67,53 @@ jobs:
       with:
         name: 'release-repo'
         path: './build/repo/release/'
+        if-no-files-found: 'error'
         retention-days: '1'
     - id: 'step-7'
       name: 'Clean up CI files'
       run: 'rm ${{ secrets.KEY_FILE_NAME }}'
       if: '${{ always() }}'
+  publish_repo:
+    name: 'Publish release repo'
+    runs-on: 'ubuntu-latest'
+    needs:
+    - 'assemble_release'
+    - 'check_yaml_consistency'
+    if: '''true'' == ${{ DO_PUBLISH_REPO }}'
+    steps:
+    - id: 'step-0'
+      name: 'Checkout repo branch'
+      uses: 'actions/checkout@v4'
+      with:
+        ref: 'repo'
+        path: '~/repo'
+    - id: 'step-1'
+      name: 'Download updated release'
+      uses: 'actions/download-artifact@v4'
+      with:
+        name: 'release-repo'
+        path: '~/release'
+    - id: 'step-2'
+      name: 'Fail on error'
+      run: 'set -e'
+    - id: 'step-3'
+      name: 'Sync repo contents'
+      run: |
+        rsync -a --delete --exclude .git --exclude .gitignore ~/release/ ~/repo/
+        cd ~/repo
+    - id: 'step-4'
+      name: 'Set email and name'
+      run: |
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+    - id: 'step-5'
+      name: 'Commit if necessary'
+      run: |
+        git status
+        if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "Update repo"
+            git push
+        else
+            echo "No changes to commit"
+        fi
