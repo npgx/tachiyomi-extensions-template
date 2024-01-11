@@ -25,6 +25,7 @@ import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.util.archivesName
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.net.URL
 import kotlin.jvm.optionals.getOrDefault
 
@@ -189,6 +190,7 @@ fun Project.setupTachiyomiExtensionConfiguration(
         buildTypes {
             release {
                 signingConfig = signingConfigs.findByName("release")
+                this.isShrinkResources
                 isMinifyEnabled = false
                 isDebuggable = false
             }
@@ -258,7 +260,7 @@ fun Project.setupTachiyomiExtensionConfiguration(
         }
 
         // jitpack doesn't work
-        val downloadInspector: TaskProvider<Download> = tasks.register<Download>("downloadInspector") {
+        val downloadInspectorTask: TaskProvider<Download> = tasks.register<Download>("downloadInspector") {
             val url = URL("""https://api.github.com/repos/tachiyomiorg/tachiyomi-extensions-inspector/releases/latest""")
             val data = Json.parseToJsonElement(String(url.readBytes()))
             val inspectorURL = data.jsonObject["assets"]!!.jsonArray[0].jsonObject["browser_download_url"]!!.jsonPrimitive.content
@@ -268,33 +270,35 @@ fun Project.setupTachiyomiExtensionConfiguration(
             onlyIfModified(true)
         }
 
+        fun File.resolveSiblingWithExtension(ext: String) = resolveSibling("${nameWithoutExtension}.${ext}")
+
         variants.forEach { variant ->
             val capitalVariant = variant.replaceFirstChar { it.uppercase() }
 
-            val dir = layout.buildDirectory.dir("outputs/apk/$variant").get()
-
-            val apk = dir.file("${archivesBaseName}-${variant}.apk").asFile
-            val json = dir.file("${apk.nameWithoutExtension}.json").asFile
-            val png = dir.file("${apk.nameWithoutExtension}.png").asFile
-            val inspectorOutput = dir.file("${apk.nameWithoutExtension}.inspector.json").asFile
-
             val assembleTask = tasks.named("assemble${capitalVariant}")
+            val assembleOutputDir = layout.buildDirectory.dir("outputs/apk/$variant").get()
 
+            val constructRepoTask = project(":").tasks.named<DefaultTask>("construct${capitalVariant}Repo")
+
+            val apkFile = assembleOutputDir.file("${archivesBaseName}-${variant}.apk").asFile
+            constructRepoTask.configure { it.inputs.file(apkFile) }
+
+            val inspectorOutputFile = apkFile.resolveSiblingWithExtension("inspector.json")
             val inspectTask = tasks.register<Exec>("inspect${capitalVariant}") {
                 dependsOn(assembleTask)
-                dependsOn(downloadInspector)
+                dependsOn(downloadInspectorTask)
 
-                outputs.file(inspectorOutput)
+                outputs.file(inspectorOutputFile)
 
-                workingDir(dir)
+                workingDir(assembleOutputDir)
 
                 executable("java")
                 args(
                     "-jar",
-                    downloadInspector.get().outputs.files.singleFile.absolutePath,
-                    apk.name,
-                    inspectorOutput.name,
-                    "temp-${apk.nameWithoutExtension}",
+                    downloadInspectorTask.get().outputs.files.singleFile.absolutePath,
+                    apkFile.name,
+                    inspectorOutputFile.name,
+                    "${apkFile.nameWithoutExtension}-inspector",
                 )
 
                 doFirst {
@@ -304,23 +308,27 @@ fun Project.setupTachiyomiExtensionConfiguration(
                 }
             }
 
+            val jsonDataFile = apkFile.resolveSiblingWithExtension("json")
+            constructRepoTask.configure { it.inputs.file(jsonDataFile) }
+
+            val pngFile = apkFile.resolveSiblingWithExtension("png")
+            constructRepoTask.configure { it.inputs.file(pngFile) }
+
             val createRepoDataTask = tasks.register<Exec>("create${capitalVariant}RepoData") {
                 dependsOn(assembleTask)
                 dependsOn(inspectTask)
 
-                val baos = ByteArrayOutputStream()
-                standardOutput = baos
+                val aapt2BAOS = ByteArrayOutputStream()
+                standardOutput = aapt2BAOS
 
-                workingDir(dir)
+                workingDir(assembleOutputDir)
                 executable(aapt2Command.get())
                 args(
                     "dump",
                     "badging",
                     "--include-meta-data",
-                    apk.name,
+                    apkFile.name,
                 )
-
-                outputs.files(json, png)
 
                 doFirst {
                     println("Running: $commandLine")
@@ -329,53 +337,55 @@ fun Project.setupTachiyomiExtensionConfiguration(
                 }
 
                 doLast {
-                    val dataDir = apk.resolveSibling(apk.nameWithoutExtension)
-
-                    copy { cp ->
-                        cp.duplicatesStrategy = DuplicatesStrategy.INCLUDE
-                        cp.from(zipTree(apk))
-                        cp.into(dataDir.apply { mkdir() })
-                    }
-
-                    copy { cp ->
-                        cp.duplicatesStrategy = DuplicatesStrategy.INCLUDE
-
-                        val ic = dataDir.resolve("res/mipmap-xhdpi-v4/ic_launcher.png")
-                        require(ic.exists()) {
-                            "res/mipmap-xhdpi-v4/ic_launcher.png not found in:\n${
-                                fileTree(dataDir).files.joinToString {
-                                    it.relativeTo(dataDir).invariantSeparatorsPath
-                                }
-                            }"
-                        }
-                        cp.from(ic)
-                        cp.into(apk.parentFile)
-                    }
-
-                    apk.resolveSibling("ic_launcher.png").renameTo(png)
-
-                    json.apply { createNewFile() }.writeText(
-                        Json.encodeToString(
-                            createRepoData(
-                                raw = String(baos.toByteArray()),
-                                inspectorOutput = inspectTask.get().outputs.files.singleFile.readText(),
-                                baseName = apk.nameWithoutExtension,
-                            )
-                        )
+                    val (repoData: RepositoryJsonExtension, aapt2Output: AAPT2Output) = createRepoData(
+                        aapt2Output = String(aapt2BAOS.toByteArray()),
+                        inspectorOutput = inspectTask.get().outputs.files.singleFile.readText(),
+                        baseName = apkFile.nameWithoutExtension,
                     )
+
+                    jsonDataFile.apply { createNewFile() }.writeText(Json.encodeToString(repoData))
+
+                    val extractionDir = apkFile.resolveSibling(apkFile.nameWithoutExtension).apply { mkdir() }
+                    copy { cp ->
+                        cp.duplicatesStrategy = DuplicatesStrategy.INCLUDE
+                        cp.from(zipTree(apkFile))
+                        cp.into(extractionDir)
+                    }
+
+                    val icLauncherRelativePath: String = aapt2Output.icons.icon320
+                    val icLauncherFile = extractionDir.resolve(icLauncherRelativePath)
+                    require(icLauncherFile.exists()) {
+                        "$icLauncherRelativePath not found:\n${
+                            fileTree(extractionDir).files.joinToString("\n") {
+                                it.relativeTo(extractionDir).invariantSeparatorsPath
+                            }
+                        }"
+                    }
+
+                    copy { cp ->
+                        cp.duplicatesStrategy = DuplicatesStrategy.INCLUDE
+                        cp.from(icLauncherFile)
+                        cp.rename { pngFile.name }
+                        cp.into(pngFile.parentFile)
+                    }
+
+                    val packageIconFile = pngFile.resolveSibling("${aapt2Output.pack.name}.png")
+                    constructRepoTask.configure { it.inputs.file(packageIconFile) }
+
+                    copy { cp ->
+                        cp.from(pngFile)
+                        cp.rename { packageIconFile.name }
+                        cp.into(pngFile.parentFile)
+                    }
 
                     println("Contents After: ${workingDir.listFiles()?.map { it.name }}")
                 }
             }
 
-            project(":").tasks.named<DefaultTask>("construct${capitalVariant}Repo") {
-                dependsOn(assembleTask)
-                dependsOn(createRepoDataTask)
-                dependsOn(inspectTask)
-
-                inputs.file(apk)
-                inputs.file(json)
-                inputs.file(png)
+            constructRepoTask.configure {
+                it.dependsOn(assembleTask)
+                it.dependsOn(inspectTask)
+                it.dependsOn(createRepoDataTask)
             }
         }
     }

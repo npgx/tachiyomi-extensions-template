@@ -44,7 +44,7 @@ data class RepositoryJsonExtension(
     )
 }
 
-private sealed class AAPT2DataExtractor {
+sealed class AAPT2DataExtractor {
     abstract val data: List<String>
 
     protected fun startingWith(start: Regex): List<String> = data.filter { str -> start.matchesAt(str, 0) }
@@ -84,9 +84,26 @@ private sealed class AAPT2DataExtractor {
         val hasChangelog by lazy { meta["tachiyomi.extension.hasChangelog"] }
     }
 
+    class AppIcons(override val data: List<String>) : AAPT2DataExtractor() {
+        val icon160 by singleton("application-icon-160")
+        val icon240 by singleton("application-icon-240")
+        val icon320 by singleton("application-icon-320")
+        val icon480 by singleton("application-icon-480")
+        val icon640 by singleton("application-icon-640")
+    }
+
     private companion object {
         private fun attrValue(use: Regex, `in`: String, default: String? = null): PropertyDelegateProvider<Any?, Lazy<String>> = PropertyDelegateProvider { cls, property ->
             lazy { use.find(`in`)?.groupValues?.get(1) ?: default ?: error("Could not find ${property.name} in ${(cls ?: Unit)::class.simpleName}") }
+        }
+
+        private fun singleton(startOverride: String? = null): PropertyDelegateProvider<AAPT2DataExtractor, Lazy<String>> = PropertyDelegateProvider { extractor, property ->
+            val singleton = startOverride ?: property.name.substringBeforeLast("Regex", "").takeIf { it.isNotBlank() } ?: error("Invalid name: ${property.name}")
+            val regex = """${singleton}:'([^']+)'""".toRegex(RegexOption.IGNORE_CASE)
+            lazy {
+                val match = extractor.data.firstNotNullOfOrNull { regex.matchEntire(it) } ?: error("Could not find ${property.name} in ${(extractor ?: Unit)::class.simpleName}")
+                match.groupValues[1]
+            }
         }
 
         private fun attr(labelOverride: String? = null): PropertyDelegateProvider<Any?, Lazy<Regex>> = PropertyDelegateProvider { _, property ->
@@ -122,13 +139,22 @@ data class InspectionElement(
     val hasCloudflare: Int = 0,
 )
 
+data class AAPT2Output(
+    val pack: AAPT2DataExtractor.Package,
+    val app: AAPT2DataExtractor.Application,
+    val meta: AAPT2DataExtractor.MetaData,
+    val icons: AAPT2DataExtractor.AppIcons,
+)
+
 private typealias ExtensionPackage = String
 
-fun createRepoData(raw: String, inspectorOutput: String, baseName: String): RepositoryJsonExtension {
-    val lines = raw.lines()
+fun createRepoData(aapt2Output: String, inspectorOutput: String, baseName: String): Pair<RepositoryJsonExtension, AAPT2Output> {
+    val lines = aapt2Output.lines()
     val packageData = AAPT2DataExtractor.Package(lines)
     val applicationData = AAPT2DataExtractor.Application(lines)
     val metaData = AAPT2DataExtractor.MetaData(lines)
+    val appIcons = AAPT2DataExtractor.AppIcons(lines)
+    val aapt2OutputData = AAPT2Output(packageData, applicationData, metaData, appIcons)
 
     val inspectionReport: Map<ExtensionPackage, List<InspectionElement>> = Json.decodeFromString(inspectorOutput)
     val (_, inspectionData) = inspectionReport.entries.singleOrNull() ?: error("inspector report should contain only a single entry!")
@@ -166,5 +192,5 @@ fun createRepoData(raw: String, inspectorOutput: String, baseName: String): Repo
                 hasCloudflare = element.hasCloudflare,
             )
         }
-    )
+    ) to aapt2OutputData
 }

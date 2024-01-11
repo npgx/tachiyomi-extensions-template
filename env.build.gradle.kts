@@ -51,20 +51,29 @@ listOf("debug", "release").forEach { variant ->
         outputs.dir(repo)
 
         doLast {
-            val allJson = inputs.files.filter { it.extension == "apk" }.map { apk ->
-                val png = apk.resolveSibling("${apk.nameWithoutExtension}.png")
+            val allJson = inputs.files
+                .filter { it.extension == "json" }
+                .joinToString(",", "[", "]") { json -> json.readText() }
 
-                copy {
-                    from(apk)
-                    into(repo.dir("apk"))
-                }
-                copy {
-                    from(png)
-                    into(repo.dir("png"))
+            inputs.files
+                .filter { it.extension == "apk" }
+                .forEach { apk ->
+                    copy {
+                        duplicatesStrategy = DuplicatesStrategy.FAIL
+                        from(apk)
+                        into(repo.dir("apk"))
+                    }
                 }
 
-                apk.resolveSibling("${apk.nameWithoutExtension}.json")
-            }.joinToString(",", "[", "]") { it.readText() }
+            inputs.files
+                .filter { it.extension == "png" }
+                .forEach { apk ->
+                    copy {
+                        duplicatesStrategy = DuplicatesStrategy.FAIL
+                        from(apk)
+                        into(repo.dir("icon"))
+                    }
+                }
 
             val index = Json.parseToJsonElement(allJson)
 
