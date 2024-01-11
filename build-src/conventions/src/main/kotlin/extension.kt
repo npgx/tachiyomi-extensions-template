@@ -329,33 +329,40 @@ fun Project.setupTachiyomiExtensionConfiguration(
                 }
 
                 doLast {
+                    val dataDir = apk.resolveSibling(apk.nameWithoutExtension)
+
                     copy { cp ->
                         cp.duplicatesStrategy = DuplicatesStrategy.INCLUDE
                         cp.from(zipTree(apk))
-                        cp.include { e ->
-                            e.name == "ic_launcher.png" &&
-                                e.path.contains("mipmap-xhdpi-v4")
-                        }
-                        cp.into(apk.resolveSibling("${apk.name}-icons").apply { mkdir() })
+                        cp.into(dataDir.apply { mkdir() })
                     }
 
                     copy { cp ->
                         cp.duplicatesStrategy = DuplicatesStrategy.INCLUDE
-                        cp.from(fileTree(apk.resolveSibling("${apk.name}-icons")).files)
-                        cp.rename { png.name }
+
+                        val ic = dataDir.resolve("res/mipmap-xhdpi-v4/ic_launcher.png")
+                        require(ic.exists()) {
+                            "res/mipmap-xhdpi-v4/ic_launcher.png not found in:\n${
+                                fileTree(dataDir).files.joinToString {
+                                    it.relativeTo(dataDir).invariantSeparatorsPath
+                                }
+                            }"
+                        }
+                        cp.from(ic)
                         cp.into(apk.parentFile)
                     }
 
-                    json.apply { createNewFile() }
-                        .writeText(
-                            Json.encodeToString(
-                                createRepoData(
-                                    raw = String(baos.toByteArray()),
-                                    inspectorOutput = inspectTask.get().outputs.files.singleFile.readText(),
-                                    baseName = apk.nameWithoutExtension,
-                                )
+                    apk.resolveSibling("ic_launcher.png").renameTo(png)
+
+                    json.apply { createNewFile() }.writeText(
+                        Json.encodeToString(
+                            createRepoData(
+                                raw = String(baos.toByteArray()),
+                                inspectorOutput = inspectTask.get().outputs.files.singleFile.readText(),
+                                baseName = apk.nameWithoutExtension,
                             )
                         )
+                    )
 
                     println("Contents After: ${workingDir.listFiles()?.map { it.name }}")
                 }
