@@ -29,6 +29,7 @@ import java.io.File
 import java.net.URL
 import kotlin.jvm.optionals.getOrDefault
 
+@Suppress("unused")
 sealed class LibVersion(val versionName: String) {
     data object V4 : LibVersion("1.4")
     data object V5 : LibVersion("1.5")
@@ -94,6 +95,7 @@ sealed class MultiSrc(val identifier: String) {
     data object ZManga : MultiSrc("zmanga")
 }
 
+@Suppress("UnstableApiUsage")
 private fun Project.getAAPT2Command(): Provider<String> {
     return extensions.getByName<ApplicationAndroidComponentsExtension>("androidComponents")
         .sdkComponents
