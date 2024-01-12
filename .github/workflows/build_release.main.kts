@@ -27,7 +27,6 @@ workflow(
     on = listOf(WorkflowDispatch()/*, Push(branches = listOf("master"), pathsIgnore = listOf("**.md"))*/),
     sourceFile = __FILE__.toPath(),
     concurrency = Concurrency(group = expr { github.workflow }, cancelInProgress = true),
-    permissions = mapOf(Permission.Contents to Mode.Write),
     env = linkedMapOf(),
 ) {
 
@@ -73,6 +72,7 @@ workflow(
         runsOn = UbuntuLatest,
         env = linkedMapOf(),
         needs = listOf(assembleRelease),
+        permissions = mapOf(Permission.Contents to Mode.Write),
         `if` = """'true' == ${expr { "vars.DO_PUBLISH_REPO" }}""",
         outputs = object : JobOutputs() {},
     ) {

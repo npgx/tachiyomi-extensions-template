@@ -1,8 +1,11 @@
+import io.ktor.server.application.call
 import io.ktor.server.application.host
 import io.ktor.server.application.port
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.http.content.staticFiles
 import io.ktor.server.netty.Netty
+import io.ktor.server.response.respondRedirect
+import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.application.Application as KtorApplication
 
@@ -37,6 +40,9 @@ val debugRepo by tasks.registering {
 
 fun KtorApplication.staticRepo(repoRoot: File) {
     routing {
+        get("/") {
+            call.respondRedirect("/index.json")
+        }
         staticFiles("/", repoRoot)
     }
 }

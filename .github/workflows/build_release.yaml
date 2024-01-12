@@ -5,8 +5,6 @@
 name: 'Construct Release'
 on:
   workflow_dispatch: {}
-permissions:
-  contents: 'write'
 concurrency:
   group: '${{ github.workflow }}'
   cancel-in-progress: true
@@ -71,6 +69,8 @@ jobs:
   publish_repo:
     name: 'Publish release repo'
     runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'write'
     needs:
     - 'assemble_release'
     - 'check_yaml_consistency'

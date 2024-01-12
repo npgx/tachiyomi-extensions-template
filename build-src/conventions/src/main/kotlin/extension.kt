@@ -246,7 +246,7 @@ fun Project.setupTachiyomiExtensionConfiguration(
         }
 
         multisrc.forEach { multi ->
-            "implementation"(project("multisrc-${multi.identifier}"))
+            "implementation"(project(":multisrc-${multi.identifier}"))
         }
     }
 

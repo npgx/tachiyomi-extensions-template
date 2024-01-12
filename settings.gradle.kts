@@ -31,7 +31,7 @@ plugins {
 }
 
 rootProject.apply {
-    name = "npgx-tachiyomi"
+    name = "tachiyomi-extensions-template"
     buildFileName = "env.build.gradle.kts"
 }
 
