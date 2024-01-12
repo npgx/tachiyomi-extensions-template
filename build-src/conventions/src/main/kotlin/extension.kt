@@ -159,23 +159,6 @@ fun Project.setupTachiyomiExtensionConfiguration(
             }
         }
 
-        defaultConfig {
-            this.minSdk = minSdk
-            this.targetSdk = compileSdk
-            applicationIdSuffix = pkgNameSuffix
-            versionCode = extVersionCode
-            this.versionName = versionName
-
-            addManifestPlaceholders(buildMap {
-                put("appName", "Tachiyomi: $extName")
-                put("extClass", extClass)
-                put("extFactory", extFactory)
-                put("nsfw", isNsfw.as1or0())
-                put("hasReadme", readmeFile.asFile.exists().as1or0())
-                put("hasChangelog", changelogFile.asFile.exists().as1or0())
-            })
-        }
-
         val signing = signingConfiguration ?: {
             storeFile = System.getenv("KEY_FILE_NAME")?.let { rootProject.rootDir.resolve(it) }
             storePassword = System.getenv("KEY_STORE_PASSWORD")
@@ -187,17 +170,38 @@ fun Project.setupTachiyomiExtensionConfiguration(
             create("release", signing)
         }
 
+        defaultConfig {
+            this.minSdk = minSdk
+            this.targetSdk = compileSdk
+            applicationIdSuffix = pkgNameSuffix
+            versionCode = extVersionCode
+            this.versionName = versionName
+
+            addManifestPlaceholders(buildMap {
+                // put("appName", "Tachiyomi: $extName") // look into buildTypes
+                put("extClass", extClass)
+                put("extFactory", extFactory)
+                put("nsfw", isNsfw.as1or0())
+                put("hasReadme", readmeFile.asFile.exists().as1or0())
+                put("hasChangelog", changelogFile.asFile.exists().as1or0())
+            })
+        }
+
         buildTypes {
             release {
                 signingConfig = signingConfigs.findByName("release")
-                this.isShrinkResources
                 isMinifyEnabled = false
                 isDebuggable = false
+
+                addManifestPlaceholders(mapOf("appName" to "Tachiyomi: $extName"))
             }
 
             debug {
+                // AGP generates a debug signing config
                 isMinifyEnabled = false
                 isDebuggable = true
+
+                addManifestPlaceholders(mapOf("appName" to "Tachiyomi [Debug]: $extName"))
             }
         }
 

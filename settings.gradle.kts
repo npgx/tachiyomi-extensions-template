@@ -37,7 +37,7 @@ rootProject.apply {
 
 includeBuild(rootProject.projectDir.resolve("build-src").resolve("conventions"))
 
-listOf("default", "serve", "new").forEach { prj ->
+listOf("default", "serve", "new", "update").forEach { prj ->
     include(":${prj}")
     project(":${prj}").apply {
         projectDir = rootProject.projectDir.resolve("utils").resolve(prj)
