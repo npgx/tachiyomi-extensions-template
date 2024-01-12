@@ -57,7 +57,40 @@ something you can check the corresponding step in the
 
 [Back to fast](#fast-guide)
 
-**WIP**
+You can either fork this repository, or use it as a template,
+citing [GitHub](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template):
+
+> Creating a repository from a template is similar to forking a repository, but there are important
+> differences:
+>
+> - A new fork includes the entire commit history of the parent repository, while a repository
+    created from a template starts with a single commit.
+>
+> - Commits to a fork don't appear in your contributions graph, while commits to a repository
+    created from a template do appear in your contribution graph.
+>
+> - A fork can be a temporary way to contribute code to an existing project, while creating a
+    repository from a template starts a new project quickly.
+
+A template should be the recommended way to go, but unfortunately that also means you won't be able
+to easily update your repository when this template gets updated.
+[There are workarounds](https://stackoverflow.com/a/56577320), but they aren't pretty.
+
+Furthermore, GitHub limits fork counts for a single individual
+(you can create an organization) to one per unique repository,
+so if you wanted to create a pull request to this repository
+you would need to do some git gymnastics.
+
+Ideally, using this template, you shouldn't need to touch anything outside
+of [extensions](./extensions), if you find that need,
+you most likely found a missing feature and a nice opportunity for a PR.
+As such, updating could be as easy as just
+saving that directory and replacing everything around it.
+
+The ultimate choice is yours, depending on if you plan on contributing
+to this repository.
+You can read more about how to work with forks and
+PRs [here](https://gist.github.com/Chaser324/ce0505fbed06b947d962).
 
 ## Step 2
 
