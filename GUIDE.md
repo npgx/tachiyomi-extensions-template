@@ -17,9 +17,15 @@ You can switch back and forth between the fast and in-depth guides by clicking o
 so if you're curious about something you can just check the corresponding step,
 which will provide more information.
 
+## Prerequisites
+
+You should optimally have a JDK 17 or 21 installed, I personally recommend
+[Adoptium](https://adoptium.net/) but any decent JDK version 11 or later should work.
+The workflow runs on Java 21.
+
 ## Fast Setup
 
-1. [[ID1](#step-1)] Use this repository as a template. (A gradle task for updating is in the works)
+1. [[ID1](#step-1)] Use this repository as a template.
 2. [[ID2](#step-2-4)] Use the task `:new:extension --identifier <id>` to create a skeletal extension
    in [extensions](./extensions). Remember to reload the gradle project.
 3. [[ID3](#step-2-4)] Modify the build.gradle.kts to your liking through
@@ -82,18 +88,18 @@ the difference between creating a fork and using a template is:
 > - A fork can be a temporary way to contribute code to an existing project, while creating a
     repository from a template starts a new project quickly.
 
-I'm working on a gradle task that will work
-with [GitHub releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases),
-to facilitate the updating process.
+I'll work on facilitating the process of updating the template using releases,
+hopefully requiring the least amount of work possible.
 
-The core idea of the task is that, ideally, using this template,
-you shouldn't need to touch anything outside of the [extensions](./extensions) directory,
-if you find that need, you most likely found a missing feature and a nice opportunity for a PR.
-As such, updating could be as easy as just
-saving that directory and replacing everything around it.
+The core idea is that, ideally, using this template,
+you shouldn't need to touch any build logic or convention
+outside of the [extensions](./extensions) directory.
+If you did find the need to modify the build logic, you most likely found a missing feature and a
+nice opportunity for a PR.
 
-Please do note that if you chose to use this template now, as the task isn't ready yet,
-you will need to do a manual update. I'll create a guide for that too.
+I'll probably create a workflow to strip down
+the template to its bare-bone essentials to avoid replacing any
+files like `.editorconfig` and such.
 
 -----
 
@@ -386,6 +392,11 @@ Now you can direct your users to
 ```
 https://raw.githubusercontent.com/{you}/{your-repo}/repo/index.min.json
 ```
+
+The workflow will automatically attempt to purge
+[jsdelivr](https://www.jsdelivr.com/)'s caches.
+If for some reason your workflow fails at this step, the `repo` branch
+should already be updated to the latest version.
 
 -----
 
