@@ -11,6 +11,9 @@ dependencyResolutionManagement {
         create("libs") {
             from(files(rootProject.projectDir.resolve("../../libs.versions.toml")))
         }
+        create("tachiyomi") {
+            from(files(rootProject.projectDir.resolve("../../tachiyomi.versions.toml")))
+        }
     }
     @Suppress("UnstableApiUsage")
     repositories {
