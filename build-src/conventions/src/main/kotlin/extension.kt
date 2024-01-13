@@ -4,9 +4,6 @@ import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
 import de.undercouch.gradle.tasks.download.Download
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import org.gradle.api.DefaultTask
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
@@ -25,7 +22,6 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.util.archivesName
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.net.URL
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.BINARY)
