@@ -3,7 +3,7 @@ import json.RepoReleaseData
 import kotlinx.serialization.json.Json
 import java.net.URL
 
-@Suppress("MemberVisibilityCanBePrivate")
+@Suppress("MemberVisibilityCanBePrivate", "CanBeParameter", "unused")
 class GitHubReleasesHandler(val owner: String, val repo: String) {
     val releasesURL = URL("""https://api.github.com/repos/${owner}/${repo}/releases""")
     val latestURL = URL("""https://api.github.com/repos/${owner}/${repo}/releases/latest""")
