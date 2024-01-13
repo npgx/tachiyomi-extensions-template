@@ -40,14 +40,7 @@ rootProject.apply {
 
 includeBuild(rootProject.projectDir.resolve("build-src").resolve("conventions"))
 
-listOf("default", "serve", "new", "strip").forEach { prj ->
-    include(":${prj}")
-    project(":${prj}").apply {
-        projectDir = rootProject.projectDir.resolve("utils").resolve(prj)
-    }
-}
-
-fun includeAllSubprojectsIn(dir: File, prefix: String, expectedScriptName: String? = "build.gradle") {
+fun includeAllSubprojectsIn(dir: File, prefix: String?, expectedScriptName: String? = "build.gradle") {
     if (!dir.exists() || !dir.isDirectory) return
 
     (dir.listFiles() ?: emptyArray())
@@ -58,12 +51,18 @@ fun includeAllSubprojectsIn(dir: File, prefix: String, expectedScriptName: Strin
                 d.listFiles()?.any { it.name == expectedScriptName || it.name == "${expectedScriptName}.kts" } == true
         }
         .forEach { inclusion ->
-            include(":${prefix}-${inclusion.name}")
-            project(":${prefix}-${inclusion.name}").apply {
+            val path = when (prefix) {
+                null -> ":${inclusion.name}"
+                else -> ":${prefix}-${inclusion.name}"
+            }
+            include(path)
+            project(path).apply {
                 this.projectDir = inclusion
             }
         }
 }
+
+includeAllSubprojectsIn(rootProject.projectDir.resolve("utils"), null)
 
 includeAllSubprojectsIn(rootProject.projectDir.resolve("lib"), "lib")
 includeAllSubprojectsIn(rootProject.projectDir.resolve("multisrc"), "multisrc")
