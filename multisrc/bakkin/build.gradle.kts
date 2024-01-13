@@ -6,8 +6,7 @@ plugins {
 
 buildscript {
     dependencies {
-        @Suppress("GradleDynamicVersion")
-        classpath("local.buildsrc:conventions:+")
+        classpath("local.buildsrc:conventions")
     }
 }
 

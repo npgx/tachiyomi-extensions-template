@@ -318,10 +318,8 @@ fun Project.setupTachiyomiExtensionConfiguration(
 
         // jitpack doesn't work
         val downloadInspectorTask: TaskProvider<Download> = tasks.register<Download>("downloadInspector") {
-            val url = URL("""https://api.github.com/repos/tachiyomiorg/tachiyomi-extensions-inspector/releases/latest""")
-            val data = Json.parseToJsonElement(String(url.readBytes()))
-            val inspectorURL = data.jsonObject["assets"]!!.jsonArray[0].jsonObject["browser_download_url"]!!.jsonPrimitive.content
-            src(inspectorURL)
+            val inspectorHandler = GitHubReleasesHandler("tachiyomiorg", "tachiyomi-extensions-inspector")
+            src(project.provider { inspectorHandler.latestRelease.assets.single { it.name.endsWith(".jar") } })
             dest(layout.buildDirectory.file("inspector.jar"))
             overwrite(false)
             onlyIfModified(true)

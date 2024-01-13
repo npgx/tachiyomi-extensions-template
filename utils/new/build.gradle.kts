@@ -6,14 +6,19 @@ val extension by tasks.registering(NewExtension::class)
 
 abstract class NewExtension : DefaultTask() {
     @get:Input
-    @set:Option(option = "identifier", description = "name of the extension to generate")
-    abstract var identifier: String
+    @set:Option(option = "path", description = "path of the extension to generate")
+    abstract var path: String
 
     @TaskAction
     fun create() {
-        val identifier = identifier
         val extensionsDir = project.rootProject.layout.projectDirectory.dir("extensions").asFile
-        val newExtension = extensionsDir.resolve(identifier)
+        val split = Regex("""[/\]""")
+
+        val fullPath = path
+        require(fullPath.isNotBlank()) { "path must not be blank" }
+
+        val identifier = fullPath.split(split).last()
+        val newExtension = extensionsDir.resolve(fullPath)
         require(!newExtension.exists()) { "Already exists: $newExtension" }
 
         newExtension.mkdirs()
@@ -37,8 +42,7 @@ plugins {
 
 buildscript {
     dependencies {
-        @Suppress("GradleDynamicVersion")
-        classpath("local.buildsrc:conventions:+")
+        classpath("local.buildsrc:conventions")
     }
 }
 

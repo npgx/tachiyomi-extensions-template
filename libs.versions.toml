@@ -10,6 +10,8 @@ kotlin_serialization = "1.6.2"
 android_gradlePlugin = "8.2.1"
 sdk_compile = "34"
 
+undercouch_download = "5.5.0"
+
 [plugins]
 
 [libraries]

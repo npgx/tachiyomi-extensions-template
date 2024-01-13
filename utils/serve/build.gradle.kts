@@ -20,14 +20,29 @@ buildscript {
     }
 }
 
-val debugRepo by tasks.registering {
+abstract class DebugRepo : DefaultTask() {
+    @get:Optional
+    @get:Input
+    @set:Option(option = "host", description = "server host")
+    abstract var host: String?
+
+    @get:Optional
+    @get:Input
+    @set:Option(option = "port", description = "server port")
+    abstract var port: String?
+}
+
+val debugRepo by tasks.registering(DebugRepo::class) {
     dependsOn(project(":").tasks.named("constructDebugRepo"))
 
     doLast {
+        val host = host ?: "127.0.0.1"
+        val port = (port ?: "8080").toIntOrNull() ?: error("Invalid port: $port")
+
         val repoRoot = rootProject.layout.buildDirectory.dir("repo/debug").get().asFile
         require(repoRoot.exists()) { "Repo does not exist: $repoRoot" }
 
-        val server = embeddedServer(Netty, port = 8080, host = "127.0.0.1", module = { staticRepo(repoRoot) })
+        val server = embeddedServer(Netty, port, host, module = { staticRepo(repoRoot) })
         println("Serving $repoRoot over ${server.environment.config.host}:${server.environment.config.port}")
         server.start(wait = false)
 

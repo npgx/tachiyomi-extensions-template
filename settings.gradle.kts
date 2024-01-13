@@ -38,7 +38,17 @@ rootProject.apply {
     buildFileName = "env.build.gradle.kts"
 }
 
-includeBuild(rootProject.projectDir.resolve("build-src").resolve("conventions"))
+rootProject.projectDir.resolve("build-src").apply {
+    includeBuild(resolve("conventions"))
+    includeBuild(resolve("github-api"))
+}
+
+includeAllSubprojectsIn(rootProject.projectDir.resolve("utils"), null)
+
+includeAllSubprojectsIn(rootProject.projectDir.resolve("lib"), "lib")
+includeAllSubprojectsIn(rootProject.projectDir.resolve("multisrc"), "multisrc")
+includeAllSubprojectsInRecursively(rootProject.projectDir.resolve("extensions"), "extensions")
+
 
 fun includeAllSubprojectsIn(dir: File, prefix: String?, expectedScriptName: String? = "build.gradle") {
     if (!dir.exists() || !dir.isDirectory) return
@@ -62,8 +72,24 @@ fun includeAllSubprojectsIn(dir: File, prefix: String?, expectedScriptName: Stri
         }
 }
 
-includeAllSubprojectsIn(rootProject.projectDir.resolve("utils"), null)
+fun includeAllSubprojectsInRecursively(root: File, prefix: String?, expectedScriptName: String? = "build.gradle") {
+    if (!root.exists() || !root.isDirectory) return
 
-includeAllSubprojectsIn(rootProject.projectDir.resolve("lib"), "lib")
-includeAllSubprojectsIn(rootProject.projectDir.resolve("multisrc"), "multisrc")
-includeAllSubprojectsIn(rootProject.projectDir.resolve("extensions"), "extensions")
+    fileTree(root).forEach { element ->
+        val include = element.isDirectory && (expectedScriptName == null ||
+            (element.listFiles() ?: emptyArray())
+                .map { it.name }
+                .let { it.contains(expectedScriptName) || it.contains("${expectedScriptName}.kts") })
+
+        if (include) {
+            val path = when (prefix) {
+                null -> ":${element.name}"
+                else -> ":${prefix}-${element.name}"
+            }
+            include(path)
+            project(path).apply {
+                this.projectDir = element
+            }
+        }
+    }
+}
