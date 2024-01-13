@@ -6,7 +6,7 @@ android {
     compileSdk = libs.versions.sdk.compile.get().toInt()
 
     defaultConfig {
-        minSdk = libs.versions.sdk.min.get().toInt()
+        minSdk = tachiyomi.versions.sdk.min.get().toInt()
     }
 
     namespace = "eu.kanade.tachiyomi.extension"

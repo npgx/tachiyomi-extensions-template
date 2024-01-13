@@ -1,48 +1,31 @@
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlin.properties.PropertyDelegateProvider
 
 @Serializable
 data class RepositoryJsonExtension(
-    @SerialName("name")
-    val name: String,
-    @SerialName("pkg")
-    val pkg: String,
-    @SerialName("apk")
-    val apk: String,
-    @SerialName("lang")
-    val lang: String,
-    @SerialName("code")
-    val code: Int,
-    @SerialName("version")
-    val version: String,
-    @SerialName("nsfw")
-    val nsfw: Int,
-    @SerialName("hasReadme")
-    val hasReadme: Int,
-    @SerialName("hasChangelog")
-    val hasChangelog: Int,
-    @SerialName("sources")
-    val sources: List<ExtensionSource>,
-) {
-    @Serializable
-    data class ExtensionSource(
-        @SerialName("name")
-        val name: String,
-        @SerialName("lang")
-        val lang: String,
-        @SerialName("id")
-        val id: String,
-        @SerialName("baseUrl")
-        val baseUrl: String,
-        @SerialName("versionId")
-        val versionId: Int,
-        @SerialName("hasCloudflare")
-        val hasCloudflare: Int,
-    )
-}
+    @SerialName("name") val extensionName: String,
+    @SerialName("pkg") val extensionPackage: String,
+    @SerialName("apk") val apkFileName: String,
+    @SerialName("lang") val lang: String,
+    @SerialName("code") val versionCode: Int,
+    @SerialName("version") val version: String,
+    @SerialName("nsfw") val isNsfw: Int,
+    @SerialName("hasReadme") val hasReadme: Int,
+    @SerialName("hasChangelog") val hasChangelog: Int,
+    @SerialName("sources") val sources: List<ExtensionSource>,
+)
+
+@Serializable
+data class ExtensionSource(
+    @SerialName("name") val name: String,
+    @SerialName("lang") val lang: String,
+    @SerialName("id") val id: String,
+    @SerialName("baseUrl") val baseUrl: String,
+    @SerialName("versionId") val versionId: Int,
+    @SerialName("hasCloudflare") val hasCloudflare: Int,
+)
 
 sealed class AAPT2DataExtractor {
     abstract val data: List<String>
@@ -129,16 +112,6 @@ sealed class AAPT2DataExtractor {
     }
 }
 
-@Serializable
-data class InspectionElement(
-    val name: String,
-    val lang: String,
-    val id: Long,
-    val baseUrl: String,
-    val versionId: Int,
-    val hasCloudflare: Int = 0,
-)
-
 data class AAPT2Output(
     val pack: AAPT2DataExtractor.Package,
     val app: AAPT2DataExtractor.Application,
@@ -156,7 +129,7 @@ fun createRepoData(aapt2Output: String, inspectorOutput: String, baseName: Strin
     val appIcons = AAPT2DataExtractor.AppIcons(lines)
     val aapt2OutputData = AAPT2Output(packageData, applicationData, metaData, appIcons)
 
-    val inspectionReport: Map<ExtensionPackage, List<InspectionElement>> = Json.decodeFromString(inspectorOutput)
+    val inspectionReport: Map<ExtensionPackage, List<ExtensionSource>> = Json.decodeFromString(inspectorOutput)
     val (_, inspectionData) = inspectionReport.entries.singleOrNull() ?: error("inspector report should contain only a single entry!")
 
     val globalLang = when (inspectionData.size) {
@@ -173,20 +146,20 @@ fun createRepoData(aapt2Output: String, inspectorOutput: String, baseName: Strin
     }
 
     return RepositoryJsonExtension(
-        name = applicationData.label,
-        pkg = packageData.name,
-        apk = "${baseName}.apk",
+        extensionName = applicationData.label,
+        extensionPackage = packageData.name,
+        apkFileName = "${baseName}.apk",
         lang = globalLang,
-        code = packageData.versionCode.toInt(),
+        versionCode = packageData.versionCode.toInt(),
         version = packageData.versionName,
-        nsfw = metaData.nsfw?.toIntOrNull() ?: -1,
+        isNsfw = metaData.nsfw?.toIntOrNull() ?: -1,
         hasReadme = metaData.hasReadme?.toIntOrNull() ?: -1,
         hasChangelog = metaData.hasChangelog?.toIntOrNull() ?: -1,
         sources = inspectionData.map { element ->
-            RepositoryJsonExtension.ExtensionSource(
+            ExtensionSource(
                 name = element.name,
                 lang = element.lang,
-                id = element.id.toString(),
+                id = element.id,
                 baseUrl = element.baseUrl,
                 versionId = element.versionId,
                 hasCloudflare = element.hasCloudflare,
