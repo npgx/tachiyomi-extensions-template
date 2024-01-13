@@ -20,5 +20,5 @@ val template by tasks.registering(Zip::class) {
     includeEmptyDirs = false
 
     destinationDirectory.set(rootProject.layout.buildDirectory)
-    archiveBaseName.set("strip")
+    archiveBaseName.set("stripped-template")
 }

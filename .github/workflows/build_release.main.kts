@@ -23,7 +23,7 @@ import io.github.typesafegithub.workflows.yaml.writeToFile
 
 workflow(
     name = "Construct Release",
-    on = listOf(WorkflowDispatch()/*, Push(branches = listOf("master"), pathsIgnore = listOf("**.md"))*/),
+    on = listOf(WorkflowDispatch()/*, Push(branchesIgnore = listOf("repo"), pathsIgnore = listOf("**.md"))*/),
     sourceFile = __FILE__.toPath(),
     concurrency = Concurrency(group = expr { github.workflow }, cancelInProgress = true),
     env = linkedMapOf(),
