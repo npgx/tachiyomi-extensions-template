@@ -9,15 +9,14 @@ plugins {
 tasks {
     wrapper {
         distributionType = Wrapper.DistributionType.ALL
-        gradleVersion = """8.6-rc-1"""
-        distributionSha256Sum = """7f95f484b97c07afc9e4dbca18d9b433155747a462857c7a7620694c6e20a58d"""
+        gradleVersion = """8.6-rc-2"""
+        distributionSha256Sum = """4a0d149f9edee932df9ae67f38e31878141c2aa54a93c59652beceeb46d5cfd3"""
     }
 }
 
 buildscript {
     dependencies {
         classpath(libs.kotlin.json)
-        classpath(libs.nanoHTTPD)
     }
 }
 
