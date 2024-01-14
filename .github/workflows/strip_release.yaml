@@ -74,7 +74,7 @@ jobs:
         path: '.'
     - id: 'step-1'
       name: 'Edit release'
-      uses: 'irongut/EditRelease@v1'
+      uses: 'irongut/EditRelease@v1.2.0'
       with:
         token: '${{ secrets.GITHUB_TOKEN }}'
         id: '${{ github.event.release.id }}'

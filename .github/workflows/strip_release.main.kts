@@ -71,7 +71,7 @@ workflow(
             private val token: String = expr { secrets.GITHUB_TOKEN },
             private val id: String = expr { github.eventRelease.release.id },
             private val files: List<String>? = null
-        ) : RegularAction<Action.Outputs>("irongut", "EditRelease", "v1") {
+        ) : RegularAction<Action.Outputs>("irongut", "EditRelease", "v1.2.0") {
             override fun toYamlArguments(): LinkedHashMap<String, String> = LinkedHashMap<String, String>().apply {
                 put("token", token)
                 put("id", id)
