@@ -1,5 +1,9 @@
 # Tachiyomi extensions template
 
+# NOTE
+This won't work for the time being, because of the situation tachiyomi is in.
+Updates will be provided when the dust settles.
+
 ## What is this?
 
 This is a template repository to ease the creation of a repository repo for
